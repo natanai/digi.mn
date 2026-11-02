@@ -15,6 +15,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 concurrency:
   group: digi-upstream-engine
@@ -69,9 +70,25 @@ jobs:
             exit 0
           fi
           git push origin "HEAD:refs/heads/$branch"
-          gh pr create --base main --head "$branch" \
+          pr_body="Safe, reviewable three-way integration from pre-programmed. Upstream base: $UPSTREAM_BASE. Upstream head: $UPSTREAM_HEAD. Digi-specific features are retained and tests passed. Review this PR before merging."
+          if gh pr create --base main --head "$branch" \
             --title "Sync pre-programmed engine through ${UPSTREAM_HEAD:0:12}" \
-            --body "Automated, reviewable three-way integration from [pre-programmed](https://github.com/natanai/pre-programmed).\n\n**Upstream base:** \`$UPSTREAM_BASE\`\n**Upstream head:** \`$UPSTREAM_HEAD\`\n\nExisting digi.mn game-specific work is preserved. Audit files, upstream Docs, README, and upstream workflows remain canonical in their own repositories and are intentionally not copied.\n\nThe synchronization job passed shared engine tests, digi.mn street/district tests, a production build, and the local Worker persistence smoke test. **Human review is still required before merging**; do not enable automatic merging of future engine changes."
+            --body "$pr_body"; then
+            echo "Created upstream review PR." >> "$GITHUB_STEP_SUMMARY"
+          else
+            # Repository settings can forbid GitHub Actions from creating PRs.
+            # Preserve the verified branch and notify the owner via an issue.
+            url="https://github.com/$GITHUB_REPOSITORY/compare/main...$branch?expand=1"
+            echo "::warning::GitHub Actions could not open a PR. Verified branch retained: $url"
+            echo "Review and open a PR: $url" >> "$GITHUB_STEP_SUMMARY"
+            issue_title="Upstream engine review ready: ${UPSTREAM_HEAD:0:12}"
+            existing="$(gh issue list --state open --search "$issue_title in:title" --json number --jq '.[0].number // empty' 2>/dev/null || true)"
+            if [[ -z "$existing" ]]; then
+              gh issue create --title "$issue_title" \
+                --body "A fully tested pre-programmed sync branch is ready for review, but GitHub Actions is not allowed to create pull requests. Open this compare page to create the PR: $url. The branch preserves digi.mn-specific features and will not be overwritten." \
+                || echo "::warning::Could not create fallback issue; see workflow summary and sync branch."
+            fi
+          fi
 
       - name: Record reconciliation details
         if: always()
