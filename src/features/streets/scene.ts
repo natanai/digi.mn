@@ -1,5 +1,5 @@
-export type StreetChoice = { id: string; text: string };
-export type StreetObject = { id: string; label: string; input: string; x: number; y: number };
+export type StreetChoice = { id: string; text: string; kind: "person" | "object" | "entrance"; x: number; y: number; entityName?: string };
+export type StreetObject = { id: string; label: string; input: string; kind: StreetChoice["kind"]; x: number; y: number };
 export type StreetPosition = { x: number; y: number };
 export type StreetDirection = { x: number; y: number };
 export type StreetScene = { seed: string; width: number; objects: StreetObject[] };
@@ -17,21 +17,23 @@ export function streetHash(value: string): number {
   return h >>> 0;
 }
 
-/** Narrative choices are the source of interaction text. No separate dialogue content is introduced. */
+/** Positions belong to authored interactions. The seed varies scenery, never who/what an interaction is. */
 export function buildStreetScene(seed: string, choices: readonly StreetChoice[]): StreetScene {
   const distinct = new Set<string>();
   const objects = choices.filter((choice) => {
     if (!choice.text.trim() || distinct.has(choice.id)) return false;
     distinct.add(choice.id);
-    return true;
-  }).slice(0, 10).map((choice, index) => ({
+    return Number.isInteger(choice.x) && choice.x >= 16 && choice.x <= 4096
+      && Number.isInteger(choice.y) && choice.y >= STREET_BOUNDS.minY && choice.y <= STREET_BOUNDS.maxY;
+  }).map((choice) => ({
     id: choice.id,
-    label: choice.text,
+    label: choice.entityName?.trim() || choice.text,
     input: choice.text,
-    x: 144 + index * 104 + streetHash(seed + ":" + choice.id) % 21,
-    y: 109 + streetHash(choice.id + ":" + seed) % 17,
+    kind: choice.kind,
+    x: choice.x,
+    y: choice.y,
   }));
-  return { seed, width: Math.max(768, objects.length * 104 + 280), objects };
+  return { seed, width: Math.max(768, ...objects.map((object) => object.x + 160)), objects };
 }
 
 export function moveStreet(
