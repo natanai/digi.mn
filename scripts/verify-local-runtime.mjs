@@ -159,7 +159,39 @@ try {
   }], "Local atomic D1 SVG media persistence acceptance");
   await readAcceptanceMedia();
 
-  const saved = await mutate(withMedia, token, [
+  const withStreet = await mutate(withMedia, token, [{
+    type: "interaction.upsert",
+    interaction: {
+      id: "digi-mn-street-acceptance",
+      sourceNodeId: initial.startNodeId,
+      order: 0,
+      wording: "examine acceptance object",
+      matchMode: "command",
+      outcomeSelection: "first",
+      choiceVisibility: "prompt",
+      choiceVisibleWhen: { type: "always" },
+      streetPlacement: { kind: "object", x: 192, y: 116 },
+      aliases: ["examine acceptance object"],
+      tags: [],
+      notes: "",
+      outcomes: [{
+        id: "digi-mn-street-response",
+        order: 0,
+        label: "default",
+        authorStatus: "configured",
+        condition: { type: "always" },
+        responseText: "The object is on the street.",
+        dialogueText: "",
+        speakerId: null,
+        responsePerformance: { charactersPerSecond: 18, cues: [] },
+        dialoguePerformance: { charactersPerSecond: 18, cues: [] },
+        effects: [],
+        after: [],
+      }],
+    },
+  }], "Local authored street persistence acceptance");
+
+  const saved = await mutate(withStreet, token, [
     { type: "project.settings", settings: withMedia.settings },
   ], "Local D1 persistence acceptance");
   await stopRuntime();
@@ -171,9 +203,13 @@ try {
     && snapshot.revision === saved.revision
     && snapshot.mediaAssets?.some((asset) => asset.id === acceptanceAssetId && asset.contentKey === acceptanceContentKey));
   if (reopened.startNodeId !== saved.startNodeId) throw new Error("Reopened local project changed identity unexpectedly.");
+  const street = reopened.interactions.find((interaction) => interaction.id === "digi-mn-street-acceptance");
+  if (!street || JSON.stringify(street.streetPlacement) !== JSON.stringify({ kind: "object", x: 192, y: 116 })) {
+    throw new Error("Authored street placement was not preserved across D1 restart.");
+  }
   await readAcceptanceMedia();
 
-  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with atomic D1-generated SVG Media, persistent project state, and repository-backed file Media.`);
+  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with atomic D1-generated SVG Media, persistent project state, authored street coordinates, and repository-backed file Media.`);
 } finally {
   await stopRuntime();
   await removeVerificationData();
