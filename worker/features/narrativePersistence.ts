@@ -573,13 +573,13 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       `,
     },
     {
-      id: 49,
+      id: 51,
       name: "narrative-interaction-street-placement",
       sql: `
         ALTER TABLE interactions
         ADD COLUMN street_placement_json TEXT;
 
-        UPDATE project_meta SET schema_version = 49 WHERE id = 1;
+        UPDATE project_meta SET schema_version = 51 WHERE id = 1;
       `,
     },
   ],
