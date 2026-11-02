@@ -51,12 +51,34 @@ export function renderStreet(
     const x = Math.round(object.x - camera);
     const y = Math.round(object.y);
     if (x < -18 || x > VIEW_WIDTH + 18) continue;
-    ctx.fillStyle = "#33424a";
-    ctx.fillRect(x - 7, y - 11, 14, 11);
-    ctx.fillStyle = "#d6c8a5";
-    ctx.fillRect(x - 5, y - 9, 10, 6);
-    ctx.fillStyle = "#26343c";
-    ctx.fillRect(x - 3, y + 1, 6, 3);
+    if (object.kind === "person") {
+      ctx.fillStyle = "#3c3549";
+      ctx.fillRect(x - 5, y - 20, 10, 5);
+      ctx.fillStyle = "#d8b29a";
+      ctx.fillRect(x - 4, y - 16, 8, 7);
+      ctx.fillStyle = "#4c5969";
+      ctx.fillRect(x - 6, y - 9, 12, 9);
+      ctx.fillStyle = "#343a47";
+      ctx.fillRect(x - 5, y, 4, 5);
+      ctx.fillRect(x + 1, y, 4, 5);
+    } else if (object.kind === "entrance") {
+      ctx.fillStyle = "#343744";
+      ctx.fillRect(x - 10, 69, 20, 37);
+      ctx.fillStyle = "#a3b7b8";
+      ctx.fillRect(x - 7, 72, 14, 31);
+      ctx.fillStyle = "#495866";
+      ctx.fillRect(x - 5, 74, 10, 27);
+      ctx.fillStyle = "#e5bd78";
+      ctx.fillRect(x + 2, 90, 2, 2);
+    } else {
+      ctx.fillStyle = "#45454b";
+      ctx.fillRect(x - 8, y - 9, 16, 8);
+      ctx.fillStyle = "#9d907c";
+      ctx.fillRect(x - 6, y - 12, 12, 5);
+      ctx.fillStyle = "#353843";
+      ctx.fillRect(x - 7, y - 1, 3, 4);
+      ctx.fillRect(x + 4, y - 1, 3, 4);
+    }
     if (nearbyStreetObject(player, [object], 29)) {
       ctx.fillStyle = "#fff2ad";
       ctx.fillRect(x - 2, y - 20, 5, 5);
