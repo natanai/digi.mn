@@ -18,6 +18,7 @@ import { buildAuthorSearchEntries } from "./author/search/authorSearch";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { PlayerWorkspaceHost } from "./player/workspaces/PlayerWorkspaceHost";
 import { StreetView } from "./features/streets/StreetView";
+import { buildDistrict } from "./features/streets/district";
 import { isInteractionChoiceVisible } from "./features/narrative/choiceVisibility";
 import { interpolateText } from "./features/narrative/interpolation";
 import type { PlayerWorkspaceRequest } from "./player/workspaces/types";
@@ -1044,6 +1045,7 @@ export default function App() {
     downloadBackup,
   }, authorToolGroups);
 
+  const district = buildDistrict(String(playState.initializationSeed), snapshot.nodes, snapshot.interactions, snapshot.startNodeId);
   const streetVisible = streetMode && !editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active;
   const streetChoices = !playState.pendingNarrativeFlow ? snapshot.interactions
     .filter((interaction) => interaction.sourceNodeId === currentNode.id
@@ -1067,7 +1069,7 @@ export default function App() {
   }}>
     <button type="button" className="digi-view-toggle" aria-pressed={streetMode} onPointerDown={(event) => event.stopPropagation()} onClick={() => setStreetMode((shown) => !shown)}>{streetMode ? "TEXT VIEW" : "STREET VIEW"}</button>
     <div className="dos-terminal">
-      {streetVisible ? <StreetView seed={String(playState.initializationSeed) + ":" + currentNode.id} choices={streetChoices} onChoose={(value) => {
+      {streetVisible ? <StreetView seed={String(playState.initializationSeed) + ":" + currentNode.id} choices={streetChoices} district={district} currentNodeId={currentNode.id} visitedNodeIds={playState.traversal} onChoose={(value) => {
         if (!typewriter.complete) { typewriter.completeImmediately(); return; }
         if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
       }} /> : null}
