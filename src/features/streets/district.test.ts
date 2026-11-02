@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildDistrict } from "./district";
-import { clampStreetPlacement, streetLayoutDraft, streetLayoutMutations } from "./author/StreetLayoutEditor";
+import { clampStreetPlacement, streetLayoutDraft, streetLayoutMutations } from "./layout";
 import type { GameNode, Interaction } from "../narrative/model";
 
 const node = (id: string) => ({id, nodeNumber: Number(id.slice(1))+1, authorLabel:id, openings:[], ending:false, tags:[], locationId:null}) as GameNode;
