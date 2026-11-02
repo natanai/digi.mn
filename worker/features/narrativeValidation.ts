@@ -132,6 +132,19 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
     if (operation.type !== "interaction.upsert" || !object(operation.interaction)) return null;
     const interaction = operation.interaction;
 
+    if (interaction.streetPlacement !== undefined && interaction.streetPlacement !== null) {
+      const placement = interaction.streetPlacement;
+      if (!object(placement)
+        || !["person", "object", "entrance"].includes(String(placement.kind))
+        || !Number.isInteger(placement.x) || (placement.x as number) < 16 || (placement.x as number) > 4096
+        || !Number.isInteger(placement.y) || (placement.y as number) < 104 || (placement.y as number) > 129
+        || (placement.entityId !== undefined
+          && (typeof placement.entityId !== "string" || !placement.entityId || placement.entityId.length > 128))
+        || interaction.matchMode === "fallback") {
+        return "Street placement needs a valid kind, position, and optional World entity.";
+      }
+    }
+
     if (interaction.order !== undefined && (!Number.isInteger(interaction.order) || (interaction.order as number) < 0)) return "Interaction order is invalid.";
     if (interaction.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(interaction.choiceVisibility))) return "Interaction choice visibility is invalid.";
     if (interaction.choiceVisibleWhen !== undefined && !conditionValid(interaction.choiceVisibleWhen)) return "Interaction choice visibility condition is invalid.";
