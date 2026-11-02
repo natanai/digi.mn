@@ -337,6 +337,18 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       undefined,
       { inheritContextFromNodeId: draft.node.id },
     );
+    const openStreetLayout = async () => {
+      if (!nodeExists) {
+        const saved = await saveCurrentDraft?.({ completeTask: false });
+        if (!saved) return;
+      }
+      context.pushTask({
+        type: "feature",
+        feature: "streets",
+        workspace: "layout",
+        data: { nodeId: draft.node.id },
+      });
+    };
     const inputRows = <NodeInputList
       snapshot={snapshotWithDraft}
       nodeId={draft.node.id}
@@ -453,7 +465,10 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           id: "node-input-handling",
           label: "INPUT HANDLING",
           summary: inputSummary,
-          children: [{ type: "custom", id: "node-input-list", role: "results", content: inputRows }],
+          children: [
+            { type: "action-row", id: "node-street-layout-actions", actions: [{ id: "open-street-layout", label: "ARRANGE STREET", onAction: () => { void openStreetLayout(); } }] },
+            { type: "custom", id: "node-input-list", role: "results", content: inputRows },
+          ],
         },
         {
           type: "custom",
