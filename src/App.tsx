@@ -92,7 +92,7 @@ import {
 import { PlayerSessionGate } from "./ui/PlayerSessionGate";
 import { useTerminalViewport } from "./ui/useTerminalViewport";
 
-const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
+const AUTHOR_TOKEN_KEY = "digi.mn:author-token";
 const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: DEFAULT_PROJECT_DEFAULTS.textSpeed, cues: [] };
 
 type TranscriptLine = PersistedTranscriptLine;

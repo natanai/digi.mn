@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { renderStreet } from "./renderer";
+import { renderStreet } from "./ui/renderer";
 import { buildStreetScene, integerPixelScale, moveStreet, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
 import "./street.css";
 
