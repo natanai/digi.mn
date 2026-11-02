@@ -224,6 +224,71 @@ export const interactionWorkspace = defineAuthorWorkspace<InteractionWorkspaceDr
       />,
     }];
 
+    if (!draft.fallbackMode && draft.screen.type === "overview") {
+      const placement = interaction.streetPlacement;
+      const availableEntities = context.snapshot.entities.filter((entity) =>
+        placement?.kind === "person" ? entity.type === "character"
+          : placement?.kind === "entrance" ? entity.type === "location" : false,
+      );
+      blocks.push({
+        type: "custom",
+        id: "street-placement",
+        role: "specialized-control",
+        content: <section className="author-ui-field" aria-label="Street placement" style={{ padding: "12px 0" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" checked={Boolean(placement)} onChange={(event) => setInteraction((current) => ({
+              ...current,
+              streetPlacement: event.target.checked
+                ? { kind: "object", x: 160, y: 114 }
+                : undefined,
+            }))} />
+            <strong>Place in street</strong>
+          </label>
+          <p style={{ margin: "8px 0", fontSize: "0.85em" }}>
+            Optional graphical position for this same input. It still uses the ordinary responses, conditions, and transitions above.
+          </p>
+          {placement ? <div style={{ display: "grid", gap: 10 }}>
+            <label>Appearance
+              <select value={placement.kind} onChange={(event) => setInteraction((current) => ({
+                ...current,
+                streetPlacement: current.streetPlacement
+                  ? { ...current.streetPlacement, kind: event.target.value as "person" | "object" | "entrance", entityId: undefined }
+                  : undefined,
+              }))}>
+                <option value="person">Person</option>
+                <option value="object">Object</option>
+                <option value="entrance">Entrance</option>
+              </select>
+            </label>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <label>X (along street)
+                <input type="number" min={16} max={4096} step={1} value={placement.x}
+                  onChange={(event) => setInteraction((current) => current.streetPlacement
+                    ? { ...current, streetPlacement: { ...current.streetPlacement, x: Math.max(16, Math.min(4096, Math.round(Number(event.target.value) || 16))) } }
+                    : current)} />
+              </label>
+              <label>Depth (104–129)
+                <input type="number" min={104} max={129} step={1} value={placement.y}
+                  onChange={(event) => setInteraction((current) => current.streetPlacement
+                    ? { ...current, streetPlacement: { ...current.streetPlacement, y: Math.max(104, Math.min(129, Math.round(Number(event.target.value) || 104))) } }
+                    : current)} />
+              </label>
+            </div>
+            {placement.kind !== "object" ? <label>
+              {placement.kind === "person" ? "Character" : "Location"} (optional)
+              <select value={placement.entityId ?? ""} onChange={(event) => setInteraction((current) => current.streetPlacement
+                ? { ...current, streetPlacement: { ...current.streetPlacement, entityId: event.target.value || undefined } }
+                : current)}>
+                <option value="">Use interaction text</option>
+                {availableEntities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name || entity.key}</option>)}
+              </select>
+            </label> : null}
+            <small>For an entrance, configure the destination Node in the regular response's AFTER section. Street coordinates do not create a second transition system.</small>
+          </div> : null}
+        </section>,
+      });
+    }
+
     if (draft.confirmDelete) blocks.push({
       type: "status",
       id: "interaction-delete-confirmation",
