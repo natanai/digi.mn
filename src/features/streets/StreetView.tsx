@@ -20,7 +20,7 @@ export function StreetView({ seed, choices, onChoose }: {
   choices: readonly StreetChoice[];
   onChoose: (text: string) => void;
 }) {
-  const choiceKey = choices.map((choice) => choice.id + ":" + choice.text).join("\u001f");
+  const choiceKey = JSON.stringify(choices);
   const scene = useMemo(() => buildStreetScene(seed, choices), [seed, choiceKey]);
   const canvas = useRef<HTMLCanvasElement>(null);
   const frame = useRef<HTMLDivElement>(null);
@@ -81,14 +81,14 @@ export function StreetView({ seed, choices, onChoose }: {
 
   return <section className="digi-street" aria-label="Side-on town prototype">
     <div className="digi-street-bar"><strong>STREET PROTOTYPE</strong><span>WASD / ARROWS · E INTERACT</span></div>
-    <div ref={frame} className="digi-street-frame">
+    <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls" onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
         style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale }}
         aria-label="Pixel-art town, controlled with arrows or WASD" role="img" />
     </div>
-    <div className="digi-street-caption">
+    <div className="digi-street-caption" onPointerDown={(event) => event.stopPropagation()}>
       {nearbyLabel ? <button type="button" onClick={() => nearbyRef.current && chooseRef.current(nearbyRef.current.input)}>[E] {nearbyLabel}</button>
-        : <span>{scene.objects.length ? "Move toward a marker to use an authored narrative choice." : "Add narrative choices at this node to create interactions here."}</span>}
+        : <span>{scene.objects.length ? "Walk toward a person, object, or entrance to interact." : "Author a street placement on a node interaction to populate this scene."}</span>}
     </div>
   </section>;
 }
