@@ -4,6 +4,7 @@ import { inventoryAuthorFeature } from "../../features/inventory/author/manifest
 import { mediaAuthorFeature } from "../../features/media/author/manifest";
 import { narrativeAuthorFeature } from "../../features/narrative/author/manifest";
 import { radixAuthorFeature } from "../../features/radix/author/manifest";
+import { streetAuthorFeature } from "../../features/streets/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
 import { worldAuthorFeature } from "../../features/world/author/manifest";
 import type { AuthorResourceProvider } from "../resources/types";
@@ -21,6 +22,7 @@ import type {
 /** Single composition registry for Author-capable feature modules. */
 export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   narrativeAuthorFeature,
+  streetAuthorFeature,
   worldAuthorFeature,
   stateAuthorFeature,
   inventoryAuthorFeature,
