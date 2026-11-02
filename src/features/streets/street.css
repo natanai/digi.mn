@@ -19,3 +19,12 @@
 .digi-district-map { position:absolute; top:21px; bottom:19px; left:0; right:0; z-index:3; background:#29323a; overflow:auto; display:flex; flex-direction:column; align-items:center; }
 .digi-district-map svg { height:calc(100% - 30px); min-height:90px; width:auto; max-width:100%; flex:1 1 auto; }
 .digi-district-help { display:flex; flex-wrap:wrap; gap:2px 12px; justify-content:center; width:100%; padding:3px 4px; font-size:9px; color:#d2d7db; }
+
+/* Opening the overhead map is a full-screen viewing mode, not a tiny inset in the text pane. */
+.digi-street.digi-street-map-open {
+  position:fixed; z-index:11; left:0; right:0; top:0; bottom:0;
+  height:100dvh; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+}
+.digi-street-map-open .digi-district-map { top:calc(23px + env(safe-area-inset-top)); bottom:calc(21px + env(safe-area-inset-bottom)); }
+.digi-street-map-open .digi-district-map svg { max-width:min(100%,760px); width:100%; }
+.digi-street-map-open .digi-street-frame { visibility:hidden; }
