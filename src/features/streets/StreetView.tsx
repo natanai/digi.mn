@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { renderStreet } from "./ui/renderer";
+import { DistrictMap } from "./ui/DistrictMap";
+import type { DistrictLayout } from "./district";
 import { buildStreetScene, integerPixelScale, moveStreet, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
 import "./street.css";
 
@@ -15,10 +17,13 @@ const isTyping = () => {
   return element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement || (element instanceof HTMLElement && element.isContentEditable);
 };
 
-export function StreetView({ seed, choices, onChoose }: {
+export function StreetView({ seed, choices, onChoose, district, currentNodeId, visitedNodeIds }: {
   seed: string;
   choices: readonly StreetChoice[];
   onChoose: (text: string) => void;
+  district: DistrictLayout;
+  currentNodeId: string;
+  visitedNodeIds: readonly string[];
 }) {
   const choiceKey = JSON.stringify(choices);
   const scene = useMemo(() => buildStreetScene(seed, choices), [seed, choiceKey]);
@@ -31,8 +36,11 @@ export function StreetView({ seed, choices, onChoose }: {
   const nearbyRef = useRef<ReturnType<typeof nearbyStreetObject>>(null);
   const [nearbyLabel, setNearbyLabel] = useState("");
   const [scale, setScale] = useState(1);
+  const [mapOpen, setMapOpen] = useState(false);
+  const mapOpenRef = useRef(false);
+  mapOpenRef.current = mapOpen;
 
-  useEffect(() => { position.current = spawn(); pressed.current.clear(); setNearbyLabel(""); }, [seed]);
+  useEffect(() => { position.current = spawn(); pressed.current.clear(); setNearbyLabel(""); setMapOpen(false); }, [seed]);
   useEffect(() => {
     const box = frame.current;
     if (!box) return;
@@ -43,7 +51,7 @@ export function StreetView({ seed, choices, onChoose }: {
   }, []);
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
-      if (isTyping() || event.altKey || event.ctrlKey || event.metaKey || event.repeat && event.key.toLowerCase() === "e") return;
+      if (mapOpenRef.current || isTyping() || event.altKey || event.ctrlKey || event.metaKey || event.repeat && event.key.toLowerCase() === "e") return;
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
       if (movementKeys[key]) { event.preventDefault(); pressed.current.add(key); }
       else if (key === "e" && nearbyRef.current) {
@@ -66,7 +74,7 @@ export function StreetView({ seed, choices, onChoose }: {
       previous = now;
       let dx = 0; let dy = 0;
       for (const key of pressed.current) { dx += movementKeys[key]?.x ?? 0; dy += movementKeys[key]?.y ?? 0; }
-      position.current = moveStreet(position.current, { x: dx, y: dy }, delta, scene.width);
+      position.current = mapOpenRef.current ? position.current : moveStreet(position.current, { x: dx, y: dy }, delta, scene.width);
       const nearby = nearbyStreetObject(position.current, scene.objects);
       nearbyRef.current = nearby;
       const label = nearby?.label ?? "";
@@ -80,14 +88,19 @@ export function StreetView({ seed, choices, onChoose }: {
   }, [scene]);
 
   return <section className="digi-street" aria-label="Side-on town prototype">
-    <div className="digi-street-bar"><strong>STREET PROTOTYPE</strong><span>WASD / ARROWS · E INTERACT</span></div>
+    <div className="digi-street-bar" onPointerDown={(event)=>event.stopPropagation()}>
+      <strong>STREET</strong>
+      <span>WASD / ARROWS · E INTERACT</span>
+      <button type="button" aria-pressed={mapOpen} onClick={() => { pressed.current.clear(); setMapOpen((current)=>!current); }}>{mapOpen?"BACK TO STREET":"DISTRICT MAP"}</button>
+    </div>
     <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls" onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
         style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale }}
         aria-label="Pixel-art town, controlled with arrows or WASD" role="img" />
     </div>
+    {mapOpen ? <DistrictMap district={district} currentNodeId={currentNodeId} visitedNodeIds={visitedNodeIds} /> : null}
     <div className="digi-street-caption" onPointerDown={(event) => event.stopPropagation()}>
-      {nearbyLabel ? <button type="button" onClick={() => nearbyRef.current && chooseRef.current(nearbyRef.current.input)}>[E] {nearbyLabel}</button>
+      {mapOpen ? <span>Map is informational. Enter buildings using the street interaction.</span> : nearbyLabel ? <button type="button" onClick={() => nearbyRef.current && chooseRef.current(nearbyRef.current.input)}>[E] {nearbyLabel}</button>
         : <span>{scene.objects.length ? "Walk toward a person, object, or entrance to interact." : "Author a street placement on a node interaction to populate this scene."}</span>}
     </div>
   </section>;
