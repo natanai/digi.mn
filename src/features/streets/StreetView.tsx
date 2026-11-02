@@ -51,7 +51,8 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
   }, []);
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
-      if (mapOpenRef.current || isTyping() || event.altKey || event.ctrlKey || event.metaKey || event.repeat && event.key.toLowerCase() === "e") return;
+      if (mapOpenRef.current) { if (event.key === "Escape") { event.preventDefault(); setMapOpen(false); } return; }
+      if (isTyping() || event.altKey || event.ctrlKey || event.metaKey || event.repeat && event.key.toLowerCase() === "e") return;
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
       if (movementKeys[key]) { event.preventDefault(); pressed.current.add(key); }
       else if (key === "e" && nearbyRef.current) {
@@ -87,7 +88,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     return () => cancelAnimationFrame(frameId);
   }, [scene]);
 
-  return <section className="digi-street" aria-label="Side-on town prototype">
+  return <section className={`digi-street${mapOpen ? " digi-street-map-open" : ""}`} aria-label="Side-on town prototype">
     <div className="digi-street-bar" onPointerDown={(event)=>event.stopPropagation()}>
       <strong>STREET</strong>
       <span>WASD / ARROWS · E INTERACT</span>
