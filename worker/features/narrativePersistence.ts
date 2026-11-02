@@ -53,6 +53,7 @@ type InteractionRow = {
   match_mode: "command" | "fallback";
   outcome_selection: "first" | "random";
   choice_visibility: Interaction["choiceVisibility"];
+  street_placement_json: string | null;
   tags_json: string;
   notes: string;
 };
@@ -571,6 +572,16 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 48 WHERE id = 1;
       `,
     },
+    {
+      id: 49,
+      name: "narrative-interaction-street-placement",
+      sql: `
+        ALTER TABLE interactions
+        ADD COLUMN street_placement_json TEXT;
+
+        UPDATE project_meta SET schema_version = 49 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -590,7 +601,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
                 narration_performance_json, dialogue_performance_json, after_flow_json
            FROM node_openings ORDER BY node_id, order_index, id`,
       ).all<OpeningRow>(),
-      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, outcome_selection, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
+      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, outcome_selection, choice_visibility, street_placement_json, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
         .all<InteractionChoiceVisibilityRow>(),
@@ -649,6 +660,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         outcomeSelection: row.outcome_selection ?? "first",
         choiceVisibility: row.choice_visibility,
         choiceVisibleWhen: parseJson(choiceVisibilityByInteraction.get(row.id), { type: "always" }),
+        streetPlacement: parseJson<Interaction["streetPlacement"] | null>(row.street_placement_json, null) ?? undefined,
         tags: parseJson(row.tags_json, []),
         notes: row.notes,
         aliases: (aliasGroups.get(row.id) ?? []).map((alias) => alias.alias),
@@ -747,15 +759,16 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       return [
         db.prepare(
           `INSERT INTO interactions
-             (id, source_node_id, order_index, wording, match_mode, outcome_selection, capture_input, choice_visibility, tags_json, notes, updated_at)
+             (id, source_node_id, order_index, wording, match_mode, outcome_selection, capture_input, choice_visibility, street_placement_json, tags_json, notes, updated_at)
            VALUES (
              ?, ?,
              COALESCE((SELECT MAX(order_index) + 1 FROM interactions WHERE source_node_id = ? AND match_mode <> 'fallback'), 0),
-             ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+             ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
            )
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
              match_mode=excluded.match_mode, outcome_selection=excluded.outcome_selection,
              capture_input=excluded.capture_input, choice_visibility=excluded.choice_visibility,
+             street_placement_json=excluded.street_placement_json,
              tags_json=excluded.tags_json, notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
@@ -766,6 +779,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           value.outcomeSelection ?? "first",
           0,
           value.choiceVisibility ?? "prompt",
+          value.streetPlacement ? JSON.stringify(value.streetPlacement) : null,
           JSON.stringify(value.tags),
           value.notes,
         ),
