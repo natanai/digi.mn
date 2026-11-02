@@ -1,0 +1,15 @@
+.digi-view-toggle {
+  position: fixed; z-index: 10; top: max(4px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+  width: auto; padding: 2px 7px; border: 1px solid #777; background: #0a0a0a; color: #ddd;
+  font: 10px "PreProgrammed VGA", monospace; cursor: pointer;
+}
+.digi-street-mode .terminal-history { top: 32%; }
+.digi-street { position: absolute; z-index: 1; top: 0; left: 0; right: 0; height: 31%; overflow: hidden;
+  display: flex; flex-direction: column; align-items: stretch; border-bottom: 1px solid #444; background: #15191d; cursor: default; }
+.digi-street-bar { flex: none; display: flex; justify-content: space-between; padding: 3px 4px; font-size: 10px; color: #ddd; }
+.digi-street-bar span { color: #999; }
+.digi-street-frame { flex: 1; min-height: 0; width: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.digi-street-frame canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; flex: none; }
+.digi-street-caption { flex: none; height: 19px; padding: 2px 4px; color: #aaa; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.digi-street-caption button { padding: 0; background: transparent; border: none; color: #fff0b3; cursor: pointer; text-align: left; }
+@media (max-width: 520px) { .digi-street-bar { font-size: 8px; } .digi-street { height: 30%; } .digi-street-mode .terminal-history { top: 31%; } }

@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const configuredBase = env.VITE_BASE_PATH?.trim();
 
   return {
-    base: mode === "pages" ? (configuredBase || "/pre-programmed/") : "/",
+    base: mode === "pages" ? (configuredBase || "/digi.mn/") : "/",
     plugins: [react()],
     server: {
       proxy: {

@@ -17,6 +17,7 @@ import { buildAuthorToolGroups } from "./author/tools/registry";
 import { buildAuthorSearchEntries } from "./author/search/authorSearch";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { PlayerWorkspaceHost } from "./player/workspaces/PlayerWorkspaceHost";
+import { StreetView } from "./features/streets/StreetView";
 import type { PlayerWorkspaceRequest } from "./player/workspaces/types";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import {
@@ -149,6 +150,7 @@ export default function App() {
   const [playState, setPlayState] = useState<PlayState | null>(null);
   const [connectionState, setConnectionState] = useState<"connecting" | "retrying" | "ready">("connecting");
   const [command, setCommand] = useState("");
+  const [streetMode, setStreetMode] = useState(true);
   const [requestingKey, setRequestingKey] = useState(false);
   const [authorToken, setAuthorToken] = useState(() => sessionStorage.getItem(AUTHOR_TOKEN_KEY) ?? "");
   const [authorMode, setAuthorMode] = useState(false);
@@ -1040,10 +1042,17 @@ export default function App() {
     downloadBackup,
   }, authorToolGroups);
 
-  return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
+  const streetVisible = streetMode && !editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active;
+  const streetChoices = [...immediateTerminalChoices, ...promptTerminalChoices];
+  return <main className={`dos-screen${streetVisible ? " digi-street-mode" : ""}`} aria-label="digi.mn narrative and town" onPointerDown={() => {
     if (!radixPresentation.active && !typewriter.complete) typewriter.completeImmediately();
   }}>
+    <button type="button" className="digi-view-toggle" aria-pressed={streetMode} onPointerDown={(event) => event.stopPropagation()} onClick={() => setStreetMode((shown) => !shown)}>{streetMode ? "TEXT VIEW" : "STREET VIEW"}</button>
     <div className="dos-terminal">
+      {streetVisible ? <StreetView seed={String(playState.initializationSeed)} choices={streetChoices} onChoose={(value) => {
+        if (!typewriter.complete) { typewriter.completeImmediately(); return; }
+        if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
+      }} /> : null}
       {radixPresentation.surface}
       <div
         ref={terminalHistoryRef}
