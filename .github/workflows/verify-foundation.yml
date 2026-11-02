@@ -1,0 +1,24 @@
+name: Verify digi.mn foundation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-foundation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vitest run src/features/streets/scene.test.ts
+      - run: npm run build
