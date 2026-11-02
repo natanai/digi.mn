@@ -18,6 +18,8 @@ import { buildAuthorSearchEntries } from "./author/search/authorSearch";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { PlayerWorkspaceHost } from "./player/workspaces/PlayerWorkspaceHost";
 import { StreetView } from "./features/streets/StreetView";
+import { isInteractionChoiceVisible } from "./features/narrative/choiceVisibility";
+import { interpolateText } from "./features/narrative/interpolation";
 import type { PlayerWorkspaceRequest } from "./player/workspaces/types";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import {
@@ -1043,13 +1045,29 @@ export default function App() {
   }, authorToolGroups);
 
   const streetVisible = streetMode && !editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active;
-  const streetChoices = [...immediateTerminalChoices, ...promptTerminalChoices];
+  const streetChoices = !playState.pendingNarrativeFlow ? snapshot.interactions
+    .filter((interaction) => interaction.sourceNodeId === currentNode.id
+      && interaction.matchMode !== "fallback" && interaction.streetPlacement
+      && isInteractionChoiceVisible(snapshot, playState, interaction))
+    .map((interaction) => {
+      const placement = interaction.streetPlacement!;
+      const entity = snapshot.entities.find((candidate) => candidate.id === placement.entityId);
+      return {
+        id: interaction.id,
+        text: interpolateText(interaction.aliases[0] || interaction.wording, { snapshot, state: playState }),
+        kind: placement.kind,
+        x: placement.x,
+        y: placement.y,
+        entityName: entity?.name,
+      };
+    })
+    : [];
   return <main className={`dos-screen${streetVisible ? " digi-street-mode" : ""}`} aria-label="digi.mn narrative and town" onPointerDown={() => {
     if (!radixPresentation.active && !typewriter.complete) typewriter.completeImmediately();
   }}>
     <button type="button" className="digi-view-toggle" aria-pressed={streetMode} onPointerDown={(event) => event.stopPropagation()} onClick={() => setStreetMode((shown) => !shown)}>{streetMode ? "TEXT VIEW" : "STREET VIEW"}</button>
     <div className="dos-terminal">
-      {streetVisible ? <StreetView seed={String(playState.initializationSeed)} choices={streetChoices} onChoose={(value) => {
+      {streetVisible ? <StreetView seed={String(playState.initializationSeed) + ":" + currentNode.id} choices={streetChoices} onChoose={(value) => {
         if (!typewriter.complete) { typewriter.completeImmediately(); return; }
         if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
       }} /> : null}
