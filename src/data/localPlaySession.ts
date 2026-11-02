@@ -2,7 +2,7 @@ import type { AuthoredSourceIdentity } from "../engine/presentation/authoredSour
 import type { PlayState, ProjectSnapshot } from "../engine/project/model";
 import type { TextPerformance } from "../features/narrative/model";
 
-const DB_NAME = "pre-programmed-player";
+const DB_NAME = "digi.mn-player";
 const DB_VERSION = 1;
 const SESSION_STORE = "sessions";
 const AUTOSAVE_KEY = "autosave";
