@@ -1,0 +1,82 @@
+name: Review pre-programmed upstream
+
+on:
+  schedule:
+    # Weekly check, Monday morning UTC. No ChatGPT session is required.
+    - cron: "17 13 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/upstream-engine.yml
+      - scripts/upstream/sync-pre-programmed.sh
+      - docs/source-snapshot.txt
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: digi-upstream-engine
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Avoid overwriting a pending upstream review
+        id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pr="$(gh pr list --base main --state open --json headRefName,number \
+            --jq '[.[] | select(.headRefName | startswith("sync/pre-programmed-"))] | .[0].number // empty')"
+          if [[ -n "$pr" ]]; then
+            echo "Pending upstream integration PR #$pr needs review. No new branch will overwrite it."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply safe three-way changes from upstream
+        if: steps.pending.outputs.skip == 'false'
+        run: bash scripts/upstream/sync-pre-programmed.sh
+
+      - name: Verify shared and digi.mn behavior
+        if: steps.pending.outputs.skip == 'false' && env.UPSTREAM_CHANGED == 'true'
+        run: |
+          npm ci
+          npm run verify
+          npm run verify:local
+
+      - name: Propose an engine integration PR
+        if: steps.pending.outputs.skip == 'false' && env.UPSTREAM_CHANGED == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="sync/pre-programmed-${UPSTREAM_HEAD:0:12}"
+          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null 2>&1; then
+            echo "::warning::Sync branch $branch already exists; refusing to overwrite it."
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Sync pre-programmed engine through ${UPSTREAM_HEAD:0:12}" \
+            --body "Automated, reviewable three-way integration from [pre-programmed](https://github.com/natanai/pre-programmed).\n\n**Upstream base:** \`$UPSTREAM_BASE\`\n**Upstream head:** \`$UPSTREAM_HEAD\`\n\nExisting digi.mn game-specific work is preserved. Audit files, upstream Docs, README, and upstream workflows remain canonical in their own repositories and are intentionally not copied.\n\nThe synchronization job passed shared engine tests, digi.mn street/district tests, a production build, and the local Worker persistence smoke test. **Human review is still required before merging**; do not enable automatic merging of future engine changes."
+
+      - name: Record reconciliation details
+        if: always()
+        run: |
+          echo "Pinned pre-programmed source:" >> "$GITHUB_STEP_SUMMARY"
+          cat docs/source-snapshot.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pending PRs and GitHub Actions failures must be reviewed before claiming upstream parity." >> "$GITHUB_STEP_SUMMARY"
