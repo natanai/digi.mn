@@ -1,5 +1,6 @@
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import { StreetLayoutEditor, streetLayoutDraft, streetLayoutMutations, type LayoutDraft } from "./StreetLayoutEditor";
+import { StreetLayoutEditor } from "./StreetLayoutEditor";
+import { streetLayoutDraft, streetLayoutMutations, type LayoutDraft } from "../layout";
 
 export const streetLayoutWorkspace = defineAuthorWorkspace<LayoutDraft>({
   id: "streets.layout",
