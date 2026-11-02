@@ -1,4 +1,4 @@
-import { nearbyStreetObject, streetHash, VIEW_HEIGHT, VIEW_WIDTH, type StreetPosition, type StreetScene } from "./scene";
+import { nearbyStreetObject, streetHash, VIEW_HEIGHT, VIEW_WIDTH, type StreetPosition, type StreetScene } from "../scene";
 
 const palette = ["#535c70", "#6b6574", "#596e6f", "#7f6a62", "#5a6272"];
 
