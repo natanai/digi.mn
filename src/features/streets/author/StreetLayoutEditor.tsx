@@ -34,12 +34,13 @@ export function clampStreetPlacement(x: number, y: number): Pick<InteractionStre
 
 /** This is the spatial editor for Narrative-owned placements, not a second Interaction editor. */
 export function StreetLayoutEditor({
-  draft, setDraft, interactions, onEdit,
+  draft, setDraft, interactions, onEdit, dirty,
 }: {
   draft: LayoutDraft;
   setDraft: Dispatch<SetStateAction<LayoutDraft>>;
   interactions: readonly Interaction[];
   onEdit: (id: string) => void;
+  dirty: boolean;
 }) {
   const activeDrag = useRef<{ id: string; pointerId: number } | null>(null);
   const targetInputs = interactions.filter((item) => item.sourceNodeId === draft.nodeId && item.matchMode !== "fallback");
@@ -75,7 +76,7 @@ export function StreetLayoutEditor({
   };
 
   return <div className="digi-layout-editor">
-    <p>Drag a marker to position its interaction. This changes only the placement; edit the interaction to change what happens. Use the Author SAVE action to keep your layout.</p>
+    <p>Drag markers or use arrow keys when focused. SAVE this layout before opening another interaction. The same existing narrative responses and transitions remain in effect.</p>
     <div className="digi-layout-scroll">
       <svg role="group" aria-label="Editable street layout" width={width} height={160} viewBox={`0 0 ${width} 160`}
         onPointerMove={onDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
@@ -115,7 +116,7 @@ export function StreetLayoutEditor({
         const placement = draft.placements[item.id]!;
         return <div className="digi-layout-row" key={item.id}>
           <span>{item.wording || item.aliases[0] || "Untitled interaction"} <small>{placement.kind} · {placement.x}, {placement.y}</small></span>
-          <button type="button" onClick={() => onEdit(item.id)}>EDIT</button>
+          <button type="button" disabled={dirty} onClick={() => onEdit(item.id)}>EDIT</button>
           <button type="button" onClick={() => change(item.id, null)}>REMOVE</button>
         </div>;
       })}
