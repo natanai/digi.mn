@@ -1,16 +1,22 @@
 name: Verify digi.mn foundation
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
       - .github/workflows/verify-foundation.yml
-      - src/features/streets/**
-      - src/App.tsx
+      - src/**
+      - worker/**
+      - scripts/**
+      - package.json
+      - package-lock.json
       - index.html
-      - worker/features/narrativePersistence.ts
-      - worker/features/narrativeValidation.ts
-      - scripts/verify-local-runtime.mjs
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
 
 permissions:
   contents: read
