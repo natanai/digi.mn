@@ -1,7 +1,7 @@
 {
-  "name": "Pre-Programmed",
-  "short_name": "Pre-Programmed",
-  "description": "A modular text-based game engine for playing and authoring simultaneously.",
+  "name": "digi.mn",
+  "short_name": "digi.mn",
+  "description": "A text-led Cleaner adventure in the Digimon Beatbreak universe.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
