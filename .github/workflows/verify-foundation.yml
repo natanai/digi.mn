@@ -8,6 +8,9 @@ on:
       - src/features/streets/**
       - src/App.tsx
       - index.html
+      - worker/features/narrativePersistence.ts
+      - worker/features/narrativeValidation.ts
+      - scripts/verify-local-runtime.mjs
 
 permissions:
   contents: read
@@ -25,3 +28,4 @@ jobs:
       - run: npm run typecheck
       - run: npx vitest run src/features/streets/scene.test.ts
       - run: npm run build
+      - run: npm run verify:local
