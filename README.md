@@ -36,6 +36,16 @@ Open `http://127.0.0.1:5173`. The local Worker and database are used by the impo
 
 The web build has **not** yet been configured for a publicly playable digi.mn deployment; the inherited Worker/hosting settings must first be separated from pre-programmed.
 
+## Upstream engine updates
+
+**pre-programmed is the canonical engine; digi.mn adds game-specific features.** This is not a one-time copy that should drift indefinitely. The original imported commit and latest integrated upstream commit are recorded in [docs/source-snapshot.txt](docs/source-snapshot.txt).
+
+The [upstream review workflow](.github/workflows/upstream-engine.yml) checks pre-programmed every Monday (and can be run manually). It uses a **three-way patch** to propose changes to shared engine files while retaining digi.mn's street, district, and Digimon extensions. Upstream's Author UX audit and canonical task lookup remain in the upstream repo, rather than competing with a duplicate copy here.
+
+Updates are never silently copied over game-specific work. The process runs shared and game-specific tests, proposes a PR where permitted, and requires review for conflicts or incompatible behavior. If GitHub Actions cannot open a PR, it retains the tested sync branch and attempts to create a tracking issue. A later upstream commit is **not considered integrated** until its changes and pin are merged into digi.mn.
+
+Game-specific presentation logic should live in `src/features/streets` and other isolated features; the imported engine's top-level App now calls a compact `StreetPlaySurface` adapter. See [AGENTS.md](AGENTS.md) for the contribution rules that keep future merges possible.
+
 ## Project direction
 
 Read the [canonical game design and first playable milestone](docs/game-design.md) for decisions about the side-on perspective, generated bounty districts, story beats, required nonviolent endings, original Digimon, and narrative-led Sapotama partner selection.
