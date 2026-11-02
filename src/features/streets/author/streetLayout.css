@@ -1,0 +1,11 @@
+.digi-layout-editor { display:flex; flex-direction:column; gap:10px; color:var(--dos-bright,#ddd); font-size:13px; }
+.digi-layout-editor p { margin:0; line-height:1.4; }
+.digi-layout-scroll { max-width:100%; overflow:auto; border:1px solid #777; background:#252932; scrollbar-width:thin; }
+.digi-layout-scroll svg { display:block; max-width:none; touch-action:pan-x; }
+.digi-layout-scroll svg g[role=button] { touch-action:none; cursor:grab; outline:none; }
+.digi-layout-scroll svg g[role=button]:focus-visible circle:first-of-type { stroke:#fff; stroke-width:3; }
+.digi-layout-list { display:grid; gap:3px; }
+.digi-layout-row { display:flex; align-items:center; gap:8px; padding:7px 5px; border-bottom:1px solid #555; }
+.digi-layout-row span { flex:1; overflow-wrap:anywhere; }
+.digi-layout-row small { display:block; color:var(--dos-muted,#999); padding-top:3px; }
+.digi-layout-row button { background:transparent; color:var(--dos-bright,#ddd); border:1px solid #777; padding:5px; cursor:pointer; }
