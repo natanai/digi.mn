@@ -4,7 +4,7 @@ import {
   normalizeProjectSnapshot,
 } from "../engine/project/settings";
 
-const DB_NAME = "pre-programmed-author";
+const DB_NAME = "digi.mn-author";
 const DB_VERSION = 1;
 const SNAPSHOT_KEY = "project";
 
