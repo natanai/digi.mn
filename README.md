@@ -8,7 +8,9 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 **Authored street interactions implemented.** A feature-owned side-on pixel renderer displays explicitly positioned narrative interactions as people, objects, or entrances. The existing interaction editor owns each target's kind, position, optional World resource identity, conditions, response, and continuation. Movement uses WASD/arrow keys after clicking the street to focus it; press **E** or use the on-screen interaction button when near a target. Scenery remains seeded placeholder art with integer nearest-neighbor scaling. Choose **TEXT VIEW** to use the original terminal.
 
-**Not implemented yet:** mission/bounty generation, the permanent Cleaner hub, dedicated map authoring, asset-backed sprite animation, the nonviolent bounty completion validator, the Sapotama partner reveal, and game-specific story content. Street sprites and buildings are placeholders, **not** finished map/quest content.
+**Visual layout + district scaffold implemented.** Open a Node in Author mode and select **ARRANGE STREET** under Input Handling. The shared Author task provides a drag/keyboard-editable street preview for its existing inputs and saves changed placements using the same canonical interaction mutation. During play, **DISTRICT MAP** opens a full-screen generated map of streets connected through authored Entrance → AFTER transitions. The map is informational, not fast travel; the underlying text runtime still determines whether an entrance changes Node.
+
+**Not implemented yet:** procedural bounty/story generation, the permanent Cleaner hub, true district street-network generation, asset-backed sprite animation, nonviolent bounty completion validation, Sapotama partner reveal, and authored game content. Present buildings, character silhouettes, and district blocks are placeholders.
 
 ## Authoring a street interaction
 
@@ -16,8 +18,10 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 2. In that interaction's overview, enable **Place in street**. Choose Person, Object, or Entrance and set a logical X position (16–4096) and depth (104–129).
 3. Optionally associate a Person with an existing Character or an Entrance with an existing Location. Save using the same interaction editor.
 4. Configure its response and AFTER destination exactly as you would in pre-programmed. The street presentation does not create a second dialogue/door engine.
+5. For a multi-object view, return to the Node editor and choose **ARRANGE STREET** under Input Handling. Drag markers or focus a marker and use arrow keys; use the normal **SAVE** action. The editor uses shared Author dirty-state and nested task navigation.
+6. Make another Node with street interactions and point an entrance's AFTER transition there. On entering it, the next street renders and the District Map shows authored connections.
 
-Entering the node displays its positioned, currently visible interactions. Unpositioned interactions remain accessible by the normal text-input route. The current prototype does not yet have a drag-to-place scene editor, map persistence, or character sprite loading.
+Entering the node displays its positioned, currently visible interactions. Unpositioned interactions remain accessible by the normal text-input route. The current prototype does not yet support dedicated tile painting, per-building geometry editing, a fully generated street graph, or art-backed character animation. Street arrangement is persisted on existing interactions; the overhead map is recalculated deterministically from their connections.
 
 ## Running locally
 
