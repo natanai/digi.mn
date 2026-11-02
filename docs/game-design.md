@@ -11,7 +11,7 @@ All playable Digimon species/character artwork will be original designs created 
 ## Player experience
 
 - **Home / hub:** permanent location and narrative anchor. This is where the player starts, accepts work, returns after a resolved bounty, and progresses through the authored story.
-- **Bounty area:** a deterministically generated overhead map for each assignment, with streets, possible destinations, and points of interest. This is the macro-navigation layer, not the main character viewpoint.
+- **Bounty area:** a deterministically generated overhead map for each assignment, with streets, possible destinations, and points of interest. This is the macro-navigation layer, not the main character viewpoint. **Current scaffold:** a seeded abstract overview derived from authored entrance transitions; procedural bounty-specific geography is not yet implemented.
 - **Town exploration:** side-on, belt-scrolling 2D streets with a limited depth axis, foreground/background layering, looped idle/walk animations, and interactable people, objects, and entrances. Depth should not demand 3D models or extensive directional sprite sets.
 - **Narrative interactions:** text remains primary. Approaching or examining something opens an interaction driven by the same conditional narrative runtime used for conversations.
 - **Confrontation:** speech, observation, physical action, disengagement, and defensive actions are all part of one continuous narrative encounter; there is no mandatory separate turn-based battle UI. Dramatic stills/short cutaway animations communicate attacks or other major actions, after which play returns to the encounter.
@@ -65,6 +65,16 @@ Add or adapt feature-owned systems for:
 Do **not** create a second parallel dialogue system, separate combat narrative engine, or duplicated author editors. Visual entities and actions should invoke the shared narrative/state/operations contracts. Keep the authoring path usable: the author must be able to arrange locations, set interactions, preview beats, and compose stories without hand-editing raw game files.
 
 Pre-programmed's current Windows packaging, generic terminal-focused player shell, and historical audits should be evaluated before copying wholesale; do not treat unrelated infrastructure as a mandatory product requirement.
+
+## Implemented spatial foundation (November 2026)
+
+The initial street renderer is now connected to authored interactions. One interaction can optionally contain a street placement (kind, X, depth, optional World identity). Its conditions, response, and AFTER transition remain exclusively owned by Narrative.
+
+Author mode's Node INPUT HANDLING section opens the Streets feature's **ARRANGE STREET** workspace. The workspace uses the shared Author draft, dirty-state, nested-task, and Save lifecycle; it persists only existing `interaction.upsert` mutations. This is a spatial arrangement surface, not a duplicate interaction editor.
+
+Players can open a generated **DISTRICT MAP** of street-bearing Nodes and their authored entrance transitions. It uses the world initialization seed and authored Node/interaction graph and is informational; opening or resolving entrances still invokes the canonical narrative action. No new navigation shortcut or quest log has been added.
+
+The map is **not** yet a procedural bounty neighborhood: it has no mission composer, road/path generation, collision-driven street exits, authored tiles, or payouts. Do not claim that the first vertical slice is playable yet.
 
 ## First playable vertical slice
 
