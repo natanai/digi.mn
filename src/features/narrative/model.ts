@@ -145,9 +145,20 @@ export type InteractionOutcome = {
   after: NarrativeFlowStep[];
 };
 
+/** Optional spatial presentation of a real narrative interaction. The interaction remains the sole behavior owner. */
+export type InteractionStreetPlacement = {
+  kind: "person" | "object" | "entrance";
+  /** Coordinates in logical street pixels, independent of CSS display size. */
+  x: number;
+  y: number;
+  /** Optional existing World Character (person) or Location (entrance) identity. */
+  entityId?: string;
+};
+
 export type Interaction = {
   id: string;
   sourceNodeId: string;
+  streetPlacement?: InteractionStreetPlacement;
   /** Durable authored position among the source Node's valid-input siblings. Historical snapshots may omit it. */
   order?: number;
   wording: string;
