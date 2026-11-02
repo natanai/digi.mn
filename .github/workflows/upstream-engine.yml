@@ -90,6 +90,20 @@ jobs:
             fi
           fi
 
+      - name: Flag a blocked upstream integration
+        if: failure() && steps.pending.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head="$(git rev-parse refs/remotes/pre-programmed/main 2>/dev/null || echo unknown)"
+          title="Upstream integration blocked: ${head:0:12}"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty' 2>/dev/null || true)"
+          if [[ -z "$existing" ]]; then
+            gh issue create --title "$title" \
+              --body "The weekly digi.mn synchronization of pre-programmed could not be completed cleanly. See the [failed workflow run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID). Resolve conflicts or failing engine tests before advancing the pinned upstream SHA. Do not discard digi.mn-specific features." \
+              || echo "::warning::Unable to open tracking issue; inspect the failed workflow run."
+          fi
+
       - name: Record reconciliation details
         if: always()
         run: |
