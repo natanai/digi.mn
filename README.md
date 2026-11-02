@@ -6,9 +6,18 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 **Engine import completed.** digi.mn contains an independent snapshot of [pre-programmed](https://github.com/natanai/pre-programmed), including its real narrative, world-state, persistence, media, and Author systems. The origin commit is recorded in [docs/source-snapshot.txt](docs/source-snapshot.txt).
 
-**Street prototype implemented.** A feature-owned side-on pixel renderer is connected to the current narrative node's authored choices. It supports WASD/arrow movement, a limited depth axis, walking/idle poses, proximity interaction with **E** or the on-screen interaction button, placeholder streets, deterministic arrangement from the play seed, and integer nearest-neighbor pixel scaling. Choose **TEXT VIEW** to use the original terminal without the graphical layer.
+**Authored street interactions implemented.** A feature-owned side-on pixel renderer displays explicitly positioned narrative interactions as people, objects, or entrances. The existing interaction editor owns each target's kind, position, optional World resource identity, conditions, response, and continuation. Movement uses WASD/arrow keys after clicking the street to focus it; press **E** or use the on-screen interaction button when near a target. Scenery remains seeded placeholder art with integer nearest-neighbor scaling. Choose **TEXT VIEW** to use the original terminal.
 
-**Not implemented yet:** mission/bounty generation, the permanent Cleaner hub, dedicated map authoring, asset-backed sprite animation, the nonviolent bounty completion validator, the Sapotama partner reveal, and game-specific story content. Placeholder street markers represent current node choices, **not** a finished town/quest system.
+**Not implemented yet:** mission/bounty generation, the permanent Cleaner hub, dedicated map authoring, asset-backed sprite animation, the nonviolent bounty completion validator, the Sapotama partner reveal, and game-specific story content. Street sprites and buildings are placeholders, **not** finished map/quest content.
+
+## Authoring a street interaction
+
+1. Open Author mode and edit a Node's existing input/interaction.
+2. In that interaction's overview, enable **Place in street**. Choose Person, Object, or Entrance and set a logical X position (16–4096) and depth (104–129).
+3. Optionally associate a Person with an existing Character or an Entrance with an existing Location. Save using the same interaction editor.
+4. Configure its response and AFTER destination exactly as you would in pre-programmed. The street presentation does not create a second dialogue/door engine.
+
+Entering the node displays its positioned, currently visible interactions. Unpositioned interactions remain accessible by the normal text-input route. The current prototype does not yet have a drag-to-place scene editor, map persistence, or character sprite loading.
 
 ## Running locally
 
