@@ -1,0 +1,436 @@
+/* Media's specialized Synth surface responds to the Author pane it is actually given. */
+.author-ui-custom:has(> .synth-sequencer) {
+  container: synth-workbench / inline-size;
+  min-width: 0;
+}
+
+.synth-sequencer,
+.synth-workbench-grid,
+.synth-patch-panel,
+.synth-sequence-panel,
+.synth-envelope-editor,
+.synth-step-details-body {
+  display: grid;
+  align-content: start;
+  gap: .7em;
+  min-width: 0;
+}
+
+.synth-transport {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35em .55em;
+  min-width: 0;
+  padding: .45em 0;
+  border-top: 1px solid var(--dos-line);
+  border-bottom: 1px solid var(--dos-line);
+  background: #000;
+}
+.synth-play { min-height: 2.65em; }
+.synth-tempo-control {
+  display: grid;
+  grid-template-columns: auto auto minmax(4.4em, 5.2em) auto;
+  align-items: center;
+  gap: .25em;
+  min-width: 0;
+}
+.synth-tempo-control > span { color: var(--dos-muted); font-size: .84em; }
+.synth-tempo-control input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+.synth-loop-toggle { margin-left: auto; }
+
+.synth-voice-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4em .8em;
+  min-width: 0;
+}
+.voice-tabs,
+.synth-voice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35em;
+  min-width: 0;
+  margin: 0;
+}
+.voice-tabs button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
+
+.synth-workbench-grid { width: 100%; }
+.synth-patch-panel,
+.synth-sequence-panel {
+  padding: .6em;
+  border: 1px dotted var(--dos-line);
+}
+
+.synth-wave-editor { display: grid; gap: .35em; min-width: 0; }
+.synth-wave-editor > span,
+.synth-envelope-heading > span { color: var(--dos-muted); font-size: .9em; }
+.synth-wave-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .3em;
+  min-width: 0;
+}
+.synth-wave-options > button {
+  min-width: 0;
+  min-height: 2.7em;
+  padding-inline: .25em;
+}
+.synth-wave-options > button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
+
+.synth-envelope-editor {
+  padding-top: .55em;
+  border-top: 1px dotted var(--dos-line);
+}
+.synth-envelope-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .65em;
+  min-width: 0;
+}
+.synth-envelope-heading small,
+.synth-envelope-help { color: var(--dos-muted); line-height: 1.2; }
+.synth-envelope-heading small { text-align: right; }
+.synth-envelope-rail {
+  display: grid;
+  gap: .25em;
+  min-width: 0;
+  margin: 0 !important;
+}
+.synth-envelope-rail > span {
+  display: flex;
+  justify-content: space-between;
+  gap: .75em;
+  color: var(--dos-muted);
+  font-size: .82em;
+}
+.synth-envelope-rail > span strong { color: var(--dos-bright); font-weight: inherit; }
+.synth-envelope-rail input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  height: 2.6em;
+  accent-color: currentColor;
+}
+
+.synth-sequence-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65em;
+  min-width: 0;
+}
+.synth-sequence-heading > div:first-child {
+  display: grid;
+  gap: .15em;
+  min-width: 0;
+}
+.synth-sequence-heading small {
+  color: var(--dos-muted);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.synth-length-actions {
+  display: flex;
+  gap: .3em;
+  flex: 0 0 auto;
+}
+.synth-length-actions > button { min-width: 3em; min-height: 2.6em; }
+
+.synth-step-pads {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .35em;
+  min-width: 0;
+}
+.synth-step-pad {
+  min-width: 0;
+  border: 1px solid var(--dos-line);
+}
+.synth-step-direct {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  gap: .2em;
+  width: 100%;
+  min-width: 0;
+  min-height: 4.7em;
+  padding: .4em;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.synth-step-direct:active { cursor: grabbing; }
+.synth-step-direct > span,
+.synth-step-direct > small { color: var(--dos-muted); font-size: .78em; }
+.synth-step-direct > strong {
+  align-self: center;
+  font-size: 1.05em;
+  overflow-wrap: anywhere;
+}
+.synth-step-direct > small { min-height: 1em; }
+.synth-step-pad[data-active="false"] .synth-step-direct > strong { color: var(--dos-muted); }
+.synth-step-pad[data-active="true"] .synth-step-direct > strong { text-decoration: underline; text-underline-offset: .2em; }
+.synth-step-pad[data-selected="true"] { outline: 1px dotted currentColor; outline-offset: 2px; }
+
+.synth-step-details {
+  border-top: 1px dotted var(--dos-line);
+  padding-top: .45em;
+}
+.synth-step-details > summary {
+  color: var(--dos-muted);
+  cursor: pointer;
+  line-height: 1.2;
+}
+.synth-step-details-body { margin-top: .55em; }
+.synth-step-detail-actions { margin: 0; }
+.synth-volume-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .45em;
+  min-width: 0;
+}
+.synth-volume-controls > button { min-height: 2.8em; }
+.synth-volume-range {
+  width: 100%;
+  min-width: 0;
+  height: 2.75em;
+  accent-color: currentColor;
+}
+
+/* Primary Media lists belong to the task body. They intentionally do not own a nested vertical scrollbar. */
+.media-asset-explorer {
+  display: grid;
+  align-content: start;
+  gap: .55em;
+  min-width: 0;
+  container-type: inline-size;
+}
+.media-asset-explorer > input { margin: 0; }
+.media-asset-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .75em;
+  min-width: 0;
+}
+.media-asset-filters > button {
+  min-height: 2.35em;
+  padding: .25em 0 !important;
+  color: var(--dos-muted) !important;
+}
+.media-asset-filters > button[aria-pressed="true"] {
+  color: var(--dos-bright) !important;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+.media-asset-actions { margin-top: 0; }
+.media-asset-warning {
+  display: grid;
+  gap: .3em;
+  margin: 0;
+  padding: .5em;
+  border: 1px solid var(--dos-line);
+  color: var(--dos-warn);
+}
+.media-asset-warning button {
+  display: grid;
+  gap: .15em;
+  padding: .35em !important;
+  border: 0;
+  background: #050505;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.media-asset-warning button small { color: var(--dos-muted); }
+.media-asset-list {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  margin: 0 0 .1em;
+  background: #333;
+}
+.media-asset-list > button {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  align-items: start;
+  justify-content: stretch;
+  gap: 1em;
+  width: 100%;
+  min-width: 0;
+  padding: .45em !important;
+  border: 0;
+  background: #050505;
+  color: #ccc;
+  font: inherit;
+  text-align: left;
+}
+.media-asset-list > button > * { min-width: 0; }
+.media-asset-list > button span:nth-child(2) { color: #888; }
+.media-asset-list code {
+  color: var(--dos-text);
+  overflow-wrap: anywhere;
+}
+.media-asset-empty { color: var(--dos-muted); }
+
+.vector-controls label { display: grid; gap: .3em; }
+.media-asset-preview { display: grid; place-items: center; min-height: 8em; padding: .5em; border: 1px dotted var(--dos-line); }
+.media-asset-preview audio { width: min(100%, 30em); }
+.media-asset-preview img { max-width: 100%; max-height: 18em; object-fit: contain; }
+
+/* The semantic Author renderer owns the task; Media only makes its specialized drawing control responsive to the space it is given. */
+.author-ui-custom:has(> .vector-editor-layout) {
+  container: vector-editor / inline-size;
+  min-width: 0;
+}
+
+.vector-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(14em, 1fr) minmax(13em, .65fr);
+  gap: 1em;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+.vector-drawing-column,
+.vector-controls,
+.vector-canvas-settings { display: grid; align-content: start; gap: .75em; min-width: 0; max-width: 100%; }
+.vector-zoom-row,
+.vector-preset-row,
+.vector-size-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .45em .75em;
+  min-width: 0;
+}
+.vector-zoom-row { color: var(--dos-muted); }
+.vector-zoom-row button,
+.vector-preset-row button,
+.vector-size-row button { min-height: 2.5em; }
+.vector-preset-row button,
+.vector-size-row button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
+.vector-zoom-row button[aria-pressed="true"] { color: var(--dos-bright); text-decoration: underline; text-underline-offset: .2em; }
+.vector-canvas-viewport {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: min(70dvh, 48rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--dos-line);
+  background: #000;
+  -webkit-overflow-scrolling: touch;
+}
+.vector-canvas-stage {
+  position: relative;
+  min-width: 100%;
+  background: #000;
+}
+.vector-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.vector-canvas-settings {
+  padding: .6em;
+  border: 1px dotted var(--dos-line);
+}
+.vector-canvas-settings > span { color: var(--dos-bright); line-height: 1.2; overflow-wrap: anywhere; }
+.vector-size-row > label {
+  flex: 1 1 6em;
+  min-width: 5em;
+  margin: 0;
+}
+.vector-size-row input[type="number"] { width: 100%; min-width: 0; max-width: 100%; }
+.vector-controls input[type="color"] { min-height: 3em; padding: .15em; }
+.vector-controls > small { line-height: 1.2; overflow-wrap: anywhere; }
+.vector-tool-row { margin-top: 0; }
+.vector-tool-row button[aria-pressed="true"] { color: var(--dos-bright); text-decoration: underline; text-underline-offset: .2em; }
+
+@container synth-workbench (min-width: 36rem) {
+  .synth-step-pads { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+@container synth-workbench (min-width: 50rem) {
+  .synth-workbench-grid {
+    grid-template-columns: minmax(14em, .42fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+@container synth-workbench (max-width: 28rem) {
+  .synth-loop-toggle { margin-left: 0; }
+  .synth-transport { align-items: stretch; }
+  .synth-play,
+  .synth-loop-toggle { flex: 1 1 auto; }
+  .synth-tempo-control { flex: 1 1 100%; grid-template-columns: auto auto minmax(4.4em, 1fr) auto; }
+  .synth-wave-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@container (max-width: 42rem) {
+  .media-asset-list > button { grid-template-columns: minmax(0, 1fr); gap: .25em; }
+}
+
+@container vector-editor (max-width: 42rem) {
+  .vector-editor-layout { grid-template-columns: minmax(0, 1fr); }
+  .vector-canvas-viewport { max-height: min(56dvh, 36rem); }
+  .vector-preset-row > button { flex: 1 1 12em; }
+  .vector-size-row > button { flex: 1 1 100%; }
+}
+
+@media (max-width: 700px) {
+  /* Viewport fallback keeps the vector maker usable even if container queries are unavailable. */
+  .vector-editor-layout { grid-template-columns: minmax(0, 1fr); }
+  .vector-canvas-viewport { max-height: min(56dvh, 36rem); }
+  .vector-preset-row > button { flex: 1 1 12em; }
+  .vector-size-row > button { flex: 1 1 100%; }
+}
+
+@media (pointer: coarse) {
+  .synth-transport button,
+  .synth-tempo-control input,
+  .synth-wave-options > button,
+  .synth-voice-actions > button,
+  .voice-tabs button,
+  .synth-length-actions > button,
+  .synth-volume-controls > button,
+  .synth-step-detail-actions > button,
+  .media-asset-filters > button { min-height: 2.9em; }
+  .synth-step-direct { min-height: 5.15em; padding: .5em; }
+  .synth-envelope-rail input[type="range"],
+  .synth-volume-range { min-height: 3.25em; }
+  .vector-tool-row button,
+  .vector-zoom-row button,
+  .vector-preset-row button,
+  .vector-size-row button { min-height: 2.75em; padding-inline: .35em; }
+  .vector-size-row input { min-height: 2.75em; }
+}

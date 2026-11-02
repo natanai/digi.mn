@@ -1,0 +1,166 @@
+import type { AuthorFeatureManifest } from "../../../author/features/types";
+import { normalizePlayerInput } from "../../../engine/input/normalize";
+import { buildGraphIndex } from "../graph";
+import { createDraftInteraction } from "../drafts";
+import type { Interaction } from "../model";
+import { nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
+import { AuthorInputSurface } from "./AuthorInputSurface";
+import { interactionWorkspace } from "./interactionWorkspace";
+import { nodeWorkspace } from "./nodeWorkspace";
+import { notationForNarrativeInteraction } from "./notation";
+import { structureWorkspace } from "./structureWorkspace";
+import { narrativeAuthorSearch, narrativeAuthorTools } from "./tools";
+import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "./ruleAdapters";
+import { narrativeProjectReferences } from "./references";
+
+const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "structure" } as const;
+
+function interactionLabel(interaction: Interaction) {
+  if (interaction.matchMode === "fallback") return "Invalid input response";
+  return interaction.wording || interaction.aliases[0] || "New scene input";
+}
+
+export const narrativeAuthorFeature: AuthorFeatureManifest = {
+  id: "narrative",
+  describeTask(route, snapshot) {
+    if (route.type !== "feature" || route.feature !== "narrative") return null;
+    if (route.workspace === "structure") return "Story structure";
+    if (route.workspace === "node") {
+      const node = snapshot.nodes.find((candidate) => candidate.id === route.data?.nodeId);
+      return node ? nodeAuthorTitle(node) : "New node";
+    }
+    if (route.workspace === "interaction") {
+      const interaction = snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId);
+      if (route.data?.fallback === "true" || interaction?.matchMode === "fallback") return "Invalid input response";
+      return interaction ? interactionLabel(interaction) : route.data?.command || "New scene input";
+    }
+    return null;
+  },
+  conditions: [visitedConditionAdapter],
+  effects: [interactionVisibilityEffectAdapter, transitionEffectAdapter],
+  references: [narrativeProjectReferences],
+  tools: narrativeAuthorTools,
+  search: narrativeAuthorSearch,
+  workspaces: [nodeWorkspace, structureWorkspace, interactionWorkspace],
+  resources: [
+    {
+      kind: "node",
+      label: "Node",
+      pluralLabel: "Nodes",
+      list: (snapshot) => snapshot.nodes.map((node) => {
+        const openings = [...node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+        const previews = openings.map((opening) => nodeOpeningSnippet(opening, 54)).filter(Boolean);
+        return {
+          id: node.id,
+          value: node.id,
+          label: nodeAuthorTitle(node),
+          detail: previews.length ? previews.join(" · ") : "No entry text",
+        };
+      }),
+      createRoute: () => ({
+        type: "feature",
+        feature: "narrative",
+        workspace: "node",
+        data: { resourceTask: "node" },
+      }),
+      editRoute: (resource) => ({
+        type: "feature",
+        feature: "narrative",
+        workspace: "node",
+        data: { nodeId: resource.id, resourceTask: "node" },
+      }),
+    },
+    {
+      kind: "interaction",
+      label: "Interaction",
+      pluralLabel: "Interactions",
+      list: (snapshot) => snapshot.interactions.map((interaction) => {
+        const source = snapshot.nodes.find((node) => node.id === interaction.sourceNodeId);
+        return {
+          id: interaction.id,
+          value: interaction.id,
+          label: interactionLabel(interaction),
+          detail: source ? `Node #${source.nodeNumber}` : "Unknown source node",
+        };
+      }),
+      createRoute: () => ({
+        type: "feature",
+        feature: "narrative",
+        workspace: "interaction",
+        data: { resourceTask: "interaction" },
+      }),
+      editRoute: (resource) => ({
+        type: "feature",
+        feature: "narrative",
+        workspace: "interaction",
+        data: { interactionId: resource.id, resourceTask: "interaction" },
+      }),
+    },
+  ],
+  terminalShortcuts: [
+    { commands: ["/structure", "structure"], route: STRUCTURE_ROUTE },
+  ],
+  capabilities: [{
+    id: "input.capture-unmatched",
+    resolve(request, { snapshot }) {
+      const sourceNodeId = typeof request.data?.sourceNodeId === "string" ? request.data.sourceNodeId : "";
+      const input = typeof request.data?.input === "string" ? request.data.input.trim() : "";
+      if (!sourceNodeId || !input) return null;
+      const normalized = normalizePlayerInput(input);
+      const existing = snapshot.interactions.find((interaction) =>
+        interaction.sourceNodeId === sourceNodeId
+        && (interaction.matchMode ?? "command") === "command"
+        && interaction.aliases.some((alias) => normalizePlayerInput(alias) === normalized));
+      if (existing) return {
+        type: "handled",
+        message: `DRAFT ALREADY EXISTS: ${existing.wording || existing.aliases[0]}`,
+        value: existing.id,
+      };
+      const interaction = createDraftInteraction(sourceNodeId, input, false, snapshot.settings.defaults);
+      return {
+        type: "mutation",
+        operations: [{ type: "interaction.upsert", interaction }],
+        description: `Created draft user input ${interaction.wording}`,
+        message: `DRAFT INPUT CREATED: ${interaction.wording}`,
+      };
+    },
+  }],
+  renderPlaySurface(context) {
+    const currentInputs = context.snapshot.interactions.filter((interaction) =>
+      interaction.sourceNodeId === context.playState.currentNodeId
+      && (interaction.matchMode ?? "command") === "command");
+    if (!currentInputs.length) return null;
+    const graph = buildGraphIndex(context.snapshot);
+    return <AuthorInputSurface
+      choices={currentInputs}
+      onChoose={(interaction) => {
+        const input = interaction.aliases[0] || interaction.wording;
+        if (input) context.submitInput(input);
+      }}
+      notationForChoice={(interaction) => notationForNarrativeInteraction(
+        context.snapshot,
+        context.playState,
+        interaction,
+        graph,
+      )}
+      onEdit={(interaction) => {
+        context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "node",
+          data: { nodeId: interaction.sourceNodeId },
+        });
+        const directOutcomeId = interaction.outcomes.length === 1 ? interaction.outcomes[0]?.id : undefined;
+        context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "interaction",
+          data: {
+            interactionId: interaction.id,
+            ...(directOutcomeId ? { outcomeId: directOutcomeId } : {}),
+          },
+        });
+      }}
+    />;
+  },
+};

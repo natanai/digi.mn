@@ -1,0 +1,191 @@
+import type { ReactNode } from "react";
+
+export type AuthorUiLabelMode = "auto" | "always" | "sr-only";
+export type AuthorUiImportance = "primary" | "standard" | "secondary";
+
+export type AuthorUiField = {
+  type: "field";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  control?: "text" | "textarea" | "search" | "number";
+  value: string | number;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  help?: string;
+  rows?: number;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
+  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  min?: number;
+  max?: number;
+  step?: number;
+  maxLength?: number;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: "on" | "off";
+  spellCheck?: boolean;
+};
+
+export type AuthorUiResource = {
+  type: "resource";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  kind: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  allowEmpty?: boolean;
+  showPreview?: boolean;
+  help?: string;
+};
+
+export type AuthorUiSelectOption = {
+  value: string;
+  label: string;
+};
+
+export type AuthorUiSelect = {
+  type: "select";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  value: string;
+  onChange: (value: string) => void;
+  options: AuthorUiSelectOption[];
+  help?: string;
+  disabled?: boolean;
+};
+
+export type AuthorUiToggle = {
+  type: "toggle";
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  help?: string;
+  disabled?: boolean;
+};
+
+export type AuthorUiChoiceOption = {
+  value: string;
+  label: string;
+  help?: string;
+  content?: AuthorUiNode[];
+};
+
+export type AuthorUiChoice = {
+  type: "choice";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  value: string;
+  onChange: (value: string) => void;
+  options: AuthorUiChoiceOption[];
+  presentation?: "segmented" | "stacked";
+};
+
+export type AuthorUiSection = {
+  type: "section";
+  id: string;
+  label: string;
+  summary?: string;
+  importance?: AuthorUiImportance;
+  children: AuthorUiNode[];
+};
+
+export type AuthorUiDisclosure = {
+  type: "disclosure";
+  id: string;
+  label: string;
+  summary?: string;
+  defaultOpen?: boolean;
+  children: AuthorUiNode[];
+};
+
+export type AuthorUiListItem = {
+  id: string;
+  label: string;
+  detail?: string;
+  onAction: () => void;
+  disabled?: boolean;
+};
+
+/** Scannable authored objects or destinations. Verbs belong in action-row instead. */
+export type AuthorUiList = {
+  type: "list";
+  id: string;
+  label: string;
+  items: AuthorUiListItem[];
+};
+
+export type AuthorUiInlineAction = {
+  id: string;
+  label: string;
+  onAction: () => void;
+  disabled?: boolean;
+  tone?: "default" | "danger";
+};
+
+/** Contextual actions inside a task body; persistence/navigation stay task-level. */
+export type AuthorUiActionRow = {
+  type: "action-row";
+  id: string;
+  actions: AuthorUiInlineAction[];
+};
+
+/**
+ * Escape hatch for a genuinely specialized control such as a rule tree,
+ * sequencer, grid, or resource result list. The shared workspace renderer still
+ * owns task chrome, hierarchy, and actions around this content.
+ */
+export type AuthorUiCustom = {
+  type: "custom";
+  id: string;
+  role: "specialized-control" | "ordered-list" | "rule-editor" | "preview" | "results";
+  content: ReactNode;
+};
+
+export type AuthorUiStatus = {
+  type: "status";
+  id: string;
+  text: string;
+  tone?: "info" | "warning" | "error" | "success";
+};
+
+export type AuthorUiNode =
+  | AuthorUiField
+  | AuthorUiResource
+  | AuthorUiSelect
+  | AuthorUiToggle
+  | AuthorUiChoice
+  | AuthorUiSection
+  | AuthorUiDisclosure
+  | AuthorUiList
+  | AuthorUiActionRow
+  | AuthorUiCustom
+  | AuthorUiStatus;
+
+export type AuthorUiAction = {
+  id: string;
+  label: string;
+  onAction: () => void;
+  disabled?: boolean;
+  tone?: "default" | "danger";
+};
+
+/**
+ * Declarative Author workspace contract.
+ *
+ * Features describe authoring intent; the shared renderer owns visual hierarchy,
+ * responsive presentation, task chrome, and action placement. There is exactly
+ * one task title and one task-level action area in this structure.
+ */
+export type AuthorWorkspaceSpec = {
+  id: string;
+  title: string;
+  context?: string;
+  blocks: AuthorUiNode[];
+  actions?: AuthorUiAction[];
+};

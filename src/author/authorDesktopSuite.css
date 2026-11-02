@@ -1,0 +1,139 @@
+/* Desktop presentation for the canonical Author system. No desktop-only editor state or behavior belongs here. */
+
+.author-desktop-resize-handle {
+  display: none;
+}
+
+@media (min-width: 1000px) and (pointer: fine) {
+  :root {
+    --author-desktop-suite-width: clamp(22rem, 28vw, 30rem);
+    --author-desktop-suite-gap: clamp(1rem, 2vw, 2rem);
+  }
+
+  html[data-author-experience="true"] .dos-screen {
+    padding-left: calc(var(--author-desktop-suite-width) + var(--author-desktop-suite-gap));
+  }
+
+  /* The existing quick/current-node Author surface becomes the dock. Keeping
+   * this keyed to Author experience state rather than AuthorHome visibility
+   * prevents the game from jumping sideways while story text is playing. */
+  html[data-author-experience="true"] .terminal-lower {
+    position: fixed;
+    top: var(--terminal-viewport-top, 0px);
+    right: auto;
+    bottom: auto;
+    left: 0;
+    width: var(--author-desktop-suite-width);
+    height: var(--terminal-viewport-height, 100dvh);
+    padding: max(16px, env(safe-area-inset-top)) 1rem max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: 1px solid var(--dos-line);
+    background: #000;
+    container-name: author-suite;
+    container-type: inline-size;
+  }
+
+  html[data-author-experience="true"] .terminal-lower > *,
+  html[data-author-experience="true"] .author-home,
+  html[data-author-experience="true"] .player-choice-scroll,
+  html[data-author-experience="true"] .unhandled-tools {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  html[data-author-experience="true"] .author-home {
+    margin-top: 0;
+  }
+
+  /* AuthorWorkspaceHost is Author-only; desktop geometry remains scoped
+   * to Author experience so player workspaces always use the player shell. */
+  html[data-author-experience="true"] .author-workspace-layer {
+    right: auto;
+    width: var(--author-desktop-suite-width);
+    border-right: 1px solid var(--dos-line);
+    container-name: author-suite;
+    container-type: inline-size;
+  }
+
+  html[data-author-experience="true"] body:has(.author-workspace-layer) .work-surface-close {
+    right: auto;
+    left: calc(var(--author-desktop-suite-width) - 3.5em);
+  }
+
+  /* Narrow suite is the same single-column presentation desktop already used.
+   * Wider layouts are restored below through container queries, so the editor
+   * responds to its own available width rather than to the viewport alone. */
+  html[data-author-experience="true"] .author-workspace-layer .form-grid,
+  html[data-author-experience="true"] .author-workspace-layer .node-meta-grid,
+  html[data-author-experience="true"] .author-workspace-layer .voice-settings,
+  html[data-author-experience="true"] .author-workspace-layer .time-change-setting,
+  html[data-author-experience="true"] .author-workspace-layer .inventory-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-author-experience="true"] .author-desktop-resize-handle {
+    position: fixed;
+    top: var(--terminal-viewport-top, 0px);
+    left: var(--author-desktop-suite-width);
+    z-index: 80;
+    display: block;
+    width: 14px;
+    height: var(--terminal-viewport-height, 100dvh);
+    transform: translateX(-50%);
+    border: 0;
+    outline: 0;
+    background: transparent;
+    cursor: ew-resize;
+    touch-action: none;
+  }
+
+  html[data-author-experience="true"] .author-desktop-resize-handle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: var(--dos-line);
+    pointer-events: none;
+  }
+
+  html[data-author-experience="true"] .author-desktop-resize-handle:hover::before,
+  html[data-author-experience="true"] .author-desktop-resize-handle:focus-visible::before,
+  html[data-author-resizing="true"] .author-desktop-resize-handle::before {
+    width: 3px;
+    background: var(--dos-bright);
+  }
+
+  html[data-author-experience="true"] .author-desktop-resize-handle:focus-visible {
+    outline: 1px dotted var(--dos-bright);
+    outline-offset: -3px;
+  }
+
+  html[data-author-resizing="true"],
+  html[data-author-resizing="true"] body,
+  html[data-author-resizing="true"] body * {
+    cursor: ew-resize !important;
+    user-select: none !important;
+  }
+
+  @container author-suite (min-width: 34rem) {
+    .form-grid,
+    .node-meta-grid,
+    .voice-settings {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .time-change-setting {
+      grid-template-columns: minmax(0, 1fr) minmax(8em, .45fr);
+    }
+  }
+
+  @container author-suite (min-width: 38rem) {
+    .inventory-layout {
+      grid-template-columns: minmax(300px, 1fr) minmax(13em, .45fr);
+    }
+  }
+}

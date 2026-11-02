@@ -1,0 +1,233 @@
+import type { SynthSound } from "./model";
+
+export const MAX_SYNTH_VOICES = 4;
+export const MAX_SYNTH_STEPS = 16;
+export const MAX_SYNTH_BEND = 12;
+export const MIN_SYNTH_LOOP_COUNT = 2;
+export const MAX_SYNTH_LOOP_COUNT = 99;
+
+const NOTE_PATTERN = /^([A-G])(#?)([2-7])$/;
+const NOTE_OFFSETS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+export function noteFrequency(note: string) {
+  const match = note.match(NOTE_PATTERN);
+  if (!match) return null;
+  const midi = (Number(match[3]) + 1) * 12 + NOTE_OFFSETS[match[1]] + (match[2] ? 1 : 0);
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+export function validateSynth(synth: SynthSound) {
+  const errors: string[] = [];
+  if (!synth.voices.length) errors.push("A Synth needs at least one voice.");
+  if (synth.voices.length > MAX_SYNTH_VOICES) errors.push(`A Synth may contain at most ${MAX_SYNTH_VOICES} voices.`);
+  if (synth.tempo < 30 || synth.tempo > 300) errors.push("Tempo must be between 30 and 300 BPM.");
+  if (synth.loopCount !== undefined
+    && (!Number.isInteger(synth.loopCount) || synth.loopCount < MIN_SYNTH_LOOP_COUNT || synth.loopCount > MAX_SYNTH_LOOP_COUNT)) {
+    errors.push(`Loop plays must be a whole number between ${MIN_SYNTH_LOOP_COUNT} and ${MAX_SYNTH_LOOP_COUNT}.`);
+  }
+  for (const voice of synth.voices) {
+    if (!voice.steps.length) errors.push("Every voice needs at least one sequence step.");
+    if (voice.steps.length > MAX_SYNTH_STEPS) errors.push(`A voice may contain at most ${MAX_SYNTH_STEPS} steps.`);
+    if (voice.attack < 0 || voice.attack > 1 || voice.release < 0 || voice.release > 1) {
+      errors.push("Voice attack and release must be between 0 and 1 second.");
+    }
+    for (const step of voice.steps) {
+      if (step.active && voice.waveform !== "noise" && noteFrequency(step.note) === null) {
+        errors.push(`Invalid note ${step.note}.`);
+      }
+      if (step.volume < 0 || step.volume > 1) errors.push("Step volume must be between 0 and 1.");
+      if (step.bend !== undefined && (!Number.isFinite(step.bend) || step.bend < -MAX_SYNTH_BEND || step.bend > MAX_SYNTH_BEND)) {
+        errors.push(`Step pitch sweep must be between -${MAX_SYNTH_BEND} and +${MAX_SYNTH_BEND} semitones.`);
+      }
+    }
+  }
+  return errors;
+}
+
+function blankStep(note = "C4") {
+  return { active: false, note, volume: 0.35 };
+}
+
+export function synthSequenceLength(sound: SynthSound) {
+  return Math.max(1, ...sound.voices.map((voice) => voice.steps.length));
+}
+
+/** Total sequence passes for playback. Looping is deliberately finite. */
+export function synthLoopCount(sound: SynthSound) {
+  if (!sound.loop) return 1;
+  const requested = sound.loopCount ?? MIN_SYNTH_LOOP_COUNT;
+  return Math.max(MIN_SYNTH_LOOP_COUNT, Math.min(MAX_SYNTH_LOOP_COUNT, Math.round(requested)));
+}
+
+export function resizeSynthSequence(sound: SynthSound, requestedLength: number): SynthSound {
+  const length = Math.max(1, Math.min(MAX_SYNTH_STEPS, Math.round(requestedLength)));
+  return {
+    ...sound,
+    voices: sound.voices.map((voice) => ({
+      ...voice,
+      steps: voice.steps.length >= length
+        ? voice.steps.slice(0, length)
+        : [...voice.steps, ...Array.from({ length: length - voice.steps.length }, () => blankStep(voice.steps.at(-1)?.note))],
+    })),
+  };
+}
+
+export function addSynthVoice(sound: SynthSound): SynthSound {
+  if (sound.voices.length >= MAX_SYNTH_VOICES) return sound;
+  return {
+    ...sound,
+    voices: [...sound.voices, {
+      waveform: "sine",
+      attack: 0.01,
+      release: 0.12,
+      steps: Array.from({ length: synthSequenceLength(sound) }, () => blankStep()),
+    }],
+  };
+}
+
+export function duplicateSynthVoice(sound: SynthSound, index: number): SynthSound {
+  const voice = sound.voices[index];
+  if (!voice || sound.voices.length >= MAX_SYNTH_VOICES) return sound;
+  return { ...sound, voices: [...sound.voices, structuredClone(voice)] };
+}
+
+export function removeSynthVoice(sound: SynthSound, index: number): SynthSound {
+  if (sound.voices.length <= 1 || !sound.voices[index]) return sound;
+  return { ...sound, voices: sound.voices.filter((_, candidateIndex) => candidateIndex !== index) };
+}
+
+export const SYNTH_PRESET_IDS = [
+  "blip",
+  "chirp",
+  "confirm",
+  "chime",
+  "alert",
+  "error",
+  "boot",
+  "ascend",
+  "zap",
+  "hit",
+] as const;
+
+export type SynthPresetId = typeof SYNTH_PRESET_IDS[number];
+
+const PRESETS: Record<SynthPresetId, Pick<SynthSound, "tempo" | "loop" | "voices">> = {
+  blip: {
+    tempo: 180,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0.01, release: 0.08, steps: [
+      { active: true, note: "C5", volume: 0.4 },
+      { active: true, note: "G5", volume: 0.32 },
+      { active: false, note: "C5", volume: 0.35 },
+      { active: false, note: "C5", volume: 0.35 },
+    ] }],
+  },
+  chirp: {
+    tempo: 240,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0, release: 0.05, steps: [
+      { active: true, note: "C5", volume: 0.38 },
+      { active: true, note: "E5", volume: 0.36 },
+      { active: true, note: "G5", volume: 0.34 },
+      { active: false, note: "G5", volume: 0.35 },
+    ] }],
+  },
+  confirm: {
+    tempo: 180,
+    loop: false,
+    voices: [{ waveform: "sine", attack: 0.01, release: 0.18, steps: [
+      { active: true, note: "G5", volume: 0.34 },
+      { active: true, note: "C6", volume: 0.32 },
+      { active: false, note: "C6", volume: 0.35 },
+      { active: false, note: "C6", volume: 0.35 },
+    ] }],
+  },
+  chime: {
+    tempo: 150,
+    loop: false,
+    voices: [{ waveform: "sine", attack: 0.01, release: 0.32, steps: [
+      { active: true, note: "C5", volume: 0.35 },
+      { active: true, note: "E5", volume: 0.32 },
+      { active: true, note: "G5", volume: 0.3 },
+      { active: true, note: "C6", volume: 0.28 },
+    ] }],
+  },
+  alert: {
+    tempo: 210,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0, release: 0.06, steps: [
+      { active: true, note: "C5", volume: 0.4 },
+      { active: true, note: "C6", volume: 0.4 },
+      { active: true, note: "C5", volume: 0.4 },
+      { active: true, note: "C6", volume: 0.4 },
+    ] }],
+  },
+  error: {
+    tempo: 220,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0, release: 0.05, steps: [
+      { active: true, note: "C4", volume: 0.4 },
+      { active: true, note: "C#4", volume: 0.4 },
+      { active: true, note: "C4", volume: 0.4 },
+      { active: true, note: "C#4", volume: 0.4 },
+    ] }],
+  },
+  boot: {
+    tempo: 190,
+    loop: false,
+    voices: [{ waveform: "triangle", attack: 0.01, release: 0.12, steps: [
+      { active: true, note: "C4", volume: 0.36 },
+      { active: true, note: "E4", volume: 0.35 },
+      { active: true, note: "G4", volume: 0.34 },
+      { active: true, note: "C5", volume: 0.33 },
+      { active: false, note: "C5", volume: 0.35 },
+      { active: true, note: "G5", volume: 0.3 },
+    ] }],
+  },
+  ascend: {
+    tempo: 200,
+    loop: false,
+    voices: [{ waveform: "triangle", attack: 0.02, release: 0.18, steps: [
+      { active: true, note: "C5", volume: 0.34 },
+      { active: true, note: "D5", volume: 0.33 },
+      { active: true, note: "E5", volume: 0.32 },
+      { active: true, note: "G5", volume: 0.31 },
+      { active: true, note: "B5", volume: 0.3 },
+      { active: true, note: "C6", volume: 0.29 },
+    ] }],
+  },
+  zap: {
+    tempo: 260,
+    loop: false,
+    voices: [{ waveform: "sawtooth", attack: 0, release: 0.05, steps: [
+      { active: true, note: "C6", volume: 0.34 },
+      { active: true, note: "G5", volume: 0.36 },
+      { active: true, note: "D5", volume: 0.38 },
+      { active: true, note: "G4", volume: 0.4 },
+    ] }],
+  },
+  hit: {
+    tempo: 120,
+    loop: false,
+    voices: [{ waveform: "noise", attack: 0, release: 0.12, steps: [
+      { active: true, note: "C4", volume: 0.5 },
+      { active: false, note: "C4", volume: 0.35 },
+      { active: false, note: "C4", volume: 0.35 },
+      { active: false, note: "C4", volume: 0.35 },
+    ] }],
+  },
+};
+
+export function applySynthPreset(sound: SynthSound, preset: SynthPresetId): SynthSound {
+  return { ...sound, ...structuredClone(PRESETS[preset]) };
+}
+
+/** A new Synth is immediately audible and small enough to understand at a glance. */
+export function createStarterSynth(id = crypto.randomUUID()): SynthSound {
+  return {
+    id,
+    key: "new-synth",
+    label: "New Synth",
+    ...structuredClone(PRESETS.blip),
+  };
+}

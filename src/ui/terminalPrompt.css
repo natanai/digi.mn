@@ -1,0 +1,434 @@
+.dos-terminal {
+  display: grid;
+  grid-template-rows: calc(50% - .5em) auto minmax(0, 1fr);
+}
+
+.terminal-history {
+  position: relative;
+  inset: auto;
+  grid-row: 1;
+  min-height: 0;
+}
+
+.terminal-command-stack {
+  position: relative;
+  grid-row: 2;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.prompt-line {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  grid-row: 2;
+  transform: none;
+}
+
+.terminal-command-stack > .prompt-line {
+  grid-row: auto;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.terminal-lower {
+  position: relative;
+  inset: auto;
+  grid-row: 3;
+  min-height: 0;
+}
+
+.terminal-lower.terminal-lower-expanded {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+.terminal-command-composer {
+  align-items: flex-start;
+  min-height: calc(1em + 2px);
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--dos-text);
+}
+
+.terminal-command-label {
+  flex: none;
+  display: block;
+  padding: 1px .35em 0 0;
+  color: var(--dos-bright);
+  line-height: 1;
+  /* Preserve authored trailing spaces and keep variable-length names usable on mobile. */
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  max-width: min(45vw, 18em);
+  pointer-events: none;
+}
+
+.terminal-command-control {
+  flex: 0 1 calc(clamp(12em, 52vw, 30em) + 2.1em);
+  width: calc(clamp(12em, 52vw, 30em) + 2.1em);
+  display: flex;
+  align-items: flex-start;
+  gap: .2em;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.terminal-command-shell {
+  position: relative;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
+  background: #fff;
+  color: #000;
+}
+
+.terminal-command-shell[data-has-menu="true"] {
+  grid-template-columns: minmax(0, 1fr) 1.9em;
+}
+
+.terminal-command-editor {
+  position: relative;
+  min-width: 0;
+  min-height: calc(1em + 2px);
+  background: #fff;
+  overflow: hidden;
+}
+
+.terminal-command-field {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(1em + 2px);
+  margin: 0;
+  padding: 1px .25em;
+  border: 0;
+  border-radius: 0;
+  appearance: none;
+  resize: none;
+  background: transparent;
+  color: #000;
+  caret-color: transparent;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  letter-spacing: 0;
+  outline: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overscroll-behavior: contain;
+}
+
+.terminal-command-secret {
+  height: calc(1em + 2px);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.terminal-command-field::selection {
+  background: #000;
+  color: #fff;
+}
+
+.terminal-command-mirror {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  min-height: calc(1em + 2px);
+  padding: 1px .25em;
+  border: 0;
+  visibility: hidden;
+  pointer-events: none;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.terminal-command-caret-marker {
+  display: inline;
+}
+
+.terminal-command-caret {
+  position: absolute;
+  z-index: 3;
+  top: var(--terminal-command-caret-y, 0);
+  left: var(--terminal-command-caret-x, .25em);
+  width: .5625em;
+  height: .125em;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.terminal-command-editor[data-caret-ready="true"] .terminal-command-caret {
+  opacity: 1;
+  animation: dos-cursor-blink 1.06s steps(1, end) infinite;
+}
+
+.terminal-command-toggle {
+  align-self: start;
+  width: 1.9em;
+  height: calc(1em + 2px);
+  min-width: 1.9em;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.terminal-command-toggle:hover,
+.terminal-command-toggle:focus-visible {
+  color: #000 !important;
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+
+.terminal-command-shell.menu-open .terminal-command-toggle {
+  background: #000;
+  color: #fff;
+}
+
+.terminal-command-shell.menu-open .terminal-command-toggle:hover,
+.terminal-command-shell.menu-open .terminal-command-toggle:focus-visible {
+  color: #fff !important;
+  outline-color: #fff;
+}
+
+.terminal-command-submit {
+  flex: none;
+  align-self: flex-start;
+  width: 1.9em;
+  height: calc(1em + 2px);
+  min-width: 1.9em;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #fff;
+  background: #000;
+  color: #fff;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.terminal-command-submit:hover,
+.terminal-command-submit:focus-visible,
+.terminal-command-submit:active {
+  background: #000;
+  color: #fff !important;
+  outline: 1px dotted #fff;
+  outline-offset: -3px;
+}
+
+.terminal-command-choices {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  max-height: min(12em, 38dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid #000;
+  background: #fff;
+  color: #000;
+  -webkit-overflow-scrolling: touch;
+}
+
+.terminal-command-shell.menu-open .terminal-command-choices {
+  position: absolute;
+  z-index: 7;
+  top: 100%;
+  right: 0;
+  left: 0;
+}
+
+.terminal-command-choice {
+  min-height: 2em;
+  margin: 0;
+  padding: .5em .25em;
+  border: 0;
+  border-bottom: 1px dotted #777;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.terminal-command-choice:last-child {
+  border-bottom: 0;
+}
+
+.terminal-command-choice:hover,
+.terminal-command-choice:focus-visible,
+.terminal-command-choice:active {
+  background: #000;
+  color: #fff !important;
+  outline: 0;
+}
+
+.terminal-command-menu-help {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2em;
+  pointer-events: none;
+}
+
+.terminal-command-menu-help-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2em;
+  height: 2em;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #000;
+  opacity: .55;
+  font: inherit;
+  font-size: .78em;
+  line-height: 1;
+  text-align: center;
+  cursor: help;
+  pointer-events: auto;
+}
+
+.terminal-command-menu-help-trigger:hover,
+.terminal-command-menu-help-trigger:focus-visible,
+.terminal-command-menu-help[data-open="true"] .terminal-command-menu-help-trigger {
+  background: transparent;
+  color: #000 !important;
+  opacity: 1;
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.terminal-command-menu-help-tooltip {
+  position: absolute;
+  z-index: 5;
+  top: 1.75em;
+  right: .25em;
+  left: .25em;
+  display: none;
+  margin: 0;
+  padding: .45em .55em;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: .86em;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+
+.terminal-command-menu-help:hover .terminal-command-menu-help-tooltip,
+.terminal-command-menu-help:focus-within .terminal-command-menu-help-tooltip,
+.terminal-command-menu-help[data-open="true"] .terminal-command-menu-help-tooltip {
+  display: block;
+}
+
+.terminal-command-menu-help + .terminal-command-choice {
+  padding-right: 2.25em;
+}
+
+.terminal-node-anchor {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  margin: .35em 0 0;
+  padding: .28em .45em;
+  border: 1px dashed var(--dos-text);
+  border-radius: 0;
+  background: #000;
+  color: var(--dos-bright);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+button.terminal-node-anchor {
+  cursor: pointer;
+}
+
+button.terminal-node-anchor:hover,
+button.terminal-node-anchor:focus-visible,
+button.terminal-node-anchor:active {
+  background: #000;
+  color: var(--dos-bright) !important;
+  outline: 1px dotted var(--dos-bright);
+  outline-offset: -4px;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .terminal-command-control {
+    flex-basis: calc(clamp(11em, 52vw, 24em) + 2.1em);
+    width: calc(clamp(11em, 52vw, 24em) + 2.1em);
+  }
+
+  .terminal-command-label {
+    padding-right: .3em;
+  }
+
+  .terminal-command-field,
+  .terminal-command-mirror,
+  .terminal-command-toggle,
+  .terminal-command-submit,
+  .terminal-command-choice {
+    font-size: max(16px, 1em);
+  }
+
+  .terminal-command-menu-help-trigger {
+    font-size: max(12px, .78em);
+  }
+}
+
+@media (max-width: 700px) {
+  .dos-terminal.dialogue-authoring-active {
+    grid-template-rows: minmax(0, auto) auto minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-command-caret {
+    animation: none !important;
+  }
+}
+
+[data-reduce-motion="true"] .terminal-command-caret {
+  animation: none !important;
+}

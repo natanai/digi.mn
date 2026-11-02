@@ -1,0 +1,43 @@
+.state-author-resource-list {
+  display: grid;
+  gap: .4em;
+}
+
+.state-author-resource-list > button,
+.state-author-status-group > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .8em;
+  min-height: 2.75em;
+  padding: .45em .6em;
+  text-align: left;
+}
+
+.state-author-resource-list > button small,
+.state-author-status-group > button small {
+  justify-self: end;
+  color: var(--dos-muted);
+}
+
+.state-author-status-group {
+  display: grid;
+  gap: .25em;
+  padding: .35em 0;
+  border-top: 1px dotted var(--dos-line);
+}
+
+.state-author-status-group > button:not(:first-child) {
+  padding-left: 1.2em;
+}
+
+.state-author-create-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4em;
+  margin-bottom: .2em;
+}
+
+.state-author-empty {
+  color: var(--dos-muted);
+}

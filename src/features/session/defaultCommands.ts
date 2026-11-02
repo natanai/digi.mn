@@ -1,0 +1,24 @@
+import type { CommandDefinition } from "../commands/model";
+
+/**
+ * Starter player wording for portable session actions. These definitions are
+ * installed into project command data once, then belong entirely to the author.
+ */
+export const SESSION_STARTER_COMMANDS: readonly CommandDefinition[] = [
+  {
+    id: "starter-session-save-file",
+    label: "Save Game",
+    enabled: true,
+    patterns: ["save", "save game"],
+    slots: [],
+    action: { type: "application", operation: "session.save-file" },
+  },
+  {
+    id: "starter-session-load-file",
+    label: "Load Game",
+    enabled: true,
+    patterns: ["load", "load game"],
+    slots: [],
+    action: { type: "application", operation: "session.load-file" },
+  },
+];

@@ -1,0 +1,3 @@
+source: natanai/pre-programmed
+source_commit: fafdf684b20ef8c920ebc9f1db1475da1d0732d8
+imported_for: digi.mn independent adaptation

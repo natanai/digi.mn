@@ -1,0 +1,18 @@
+.outcome-composer-section-body {
+  display: grid;
+  gap: .65em;
+  min-width: 0;
+}
+
+.outcome-condition-editor > p,
+.outcome-effects-editor > p {
+  margin: 0 0 .7em;
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.outcome-condition-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .7em;
+}

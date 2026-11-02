@@ -1,0 +1,479 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
+import { useMemo, type Dispatch, type SetStateAction } from "react";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
+import { ValueMentionField } from "../../../author/ValueMentionField";
+import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
+import { ConditionEditor } from "../../../author/ConditionEditor";
+import { ALWAYS, type Condition } from "../../../engine/rules/model";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
+import type {
+  Interaction,
+  InteractionChoiceVisibility,
+  InteractionOutcome,
+} from "../model";
+import {
+  OutcomeComposerSection,
+  OutcomeConditionEditor,
+  OutcomeEffectsEditor,
+} from "../../../author/outcomes/OutcomeComposer";
+import { createDraftOutcome } from "../drafts";
+import { captureFlowParts, flowDestination, flowEffectsCount, flowReturnsPrevious } from "../flow";
+import { buildGraphIndex, notationForNode } from "../graph";
+import { interactionOutcomeProse } from "../interactionProse";
+import { nodeOpeningSnippet } from "../nodeOpenings";
+import { resolveNodeConversationContext } from "../sceneContext";
+import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
+import { NarrativeAfterEditor } from "./NarrativeAfterEditor";
+export { aliasesForUserInput } from "./interactionAuthoring";
+import "./interactionEditor.css";
+
+const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
+  { value: "immediate", label: "VISIBLE", help: "Show this choice without opening the prompt menu." },
+  { value: "prompt", label: "ON PROMPT", help: "Show this choice when the player opens available options." },
+  { value: "typed", label: "TYPED ONLY", help: "Never suggest this choice. Typing the input directly still works." },
+];
+
+export type InteractionEditorScreen =
+  | { type: "overview" }
+  | { type: "response"; outcomeId: string }
+  | { type: "input-settings" };
+
+function conditionSummary(condition: Condition): string {
+  switch (condition.type) {
+    case "always": return "Always";
+    case "attempt": {
+      if (condition.operator === "eq" && condition.value === 1) return "First time";
+      if (condition.operator === "eq" && condition.value === 2) return "Second time";
+      if (condition.operator === "gte" && condition.value === 2) return "Second time +";
+      return `Occurrence ${condition.operator} ${condition.value}`;
+    }
+    case "variable": return `${condition.key || "variable"} ${condition.operator} ${String(condition.value)}`;
+    case "flag": return `${condition.key || "flag"} is ${condition.value ? "true" : "false"}`;
+    case "has_item": return `Has item${condition.minimum && condition.minimum > 1 ? ` ×${condition.minimum}` : ""}`;
+    case "lacks_item": return "Lacks item";
+    case "visited": return condition.value ? "Visited node" : "Has not visited node";
+    case "state": return `${condition.field} ${condition.operator} ${condition.value}`;
+    case "all": return `All of ${condition.conditions.length} conditions`;
+    case "any": return `Any of ${condition.conditions.length} conditions`;
+    case "not": return `Not: ${conditionSummary(condition.condition)}`;
+  }
+}
+
+function responseSnippet(outcome: InteractionOutcome) {
+  const prose = interactionOutcomeProse(outcome);
+  const text = [prose.narrationText, prose.dialogueText].filter((value) => value.trim()).join(" / ").trim().replace(/\s+/g, " ");
+  if (text) return text.length > 72 ? `${text.slice(0, 69)}...` : text;
+  if (outcome.effects.length) return `${outcome.effects.length} effect${outcome.effects.length === 1 ? "" : "s"}, no response text`;
+  return "No response yet";
+}
+
+function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome, conversationCharacterId: string | null) {
+  const prose = interactionOutcomeProse(outcome);
+  if (!prose.dialogueText.trim()) return "Narration";
+  const speakerId = conversationCharacterId ?? outcome.speakerId;
+  if (!speakerId) return "Conversation at runtime";
+  return snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId)?.name ?? "Unknown speaker";
+}
+
+function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
+  const capture = captureFlowParts(outcome.after);
+  const destination = flowDestination(outcome.after);
+  const returnsPrevious = flowReturnsPrevious(outcome.after);
+  const continuation = returnsPrevious
+    ? "Return to previous Node"
+    : !destination
+      ? "Stay here"
+      : (() => {
+        const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
+        if (!node) return "Linked node";
+        if (!destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
+        const opening = node.openings.find((candidate) => candidate.id === destination.openingId);
+        return `Node #${node.nodeNumber} · ${opening ? nodeOpeningSnippet(opening, 40) || "specific opening" : "missing opening"}`;
+      })();
+  return capture ? `Capture next input · then ${continuation.toLocaleLowerCase()}` : continuation;
+}
+
+function secondaryAliases(wording: string, aliases: string[]) {
+  const primary = wording.trim().toLocaleLowerCase();
+  return aliases.filter((alias) => alias.trim().toLocaleLowerCase() !== primary);
+}
+
+export function InteractionComposer({
+  snapshot,
+  playState,
+  draft,
+  setDraft,
+  fallbackMode,
+  isNew,
+  screen,
+  setScreen,
+  newOutcomeIds,
+  setNewOutcomeIds,
+  error,
+  onClearError,
+  onPreview,
+  onCreateDestination,
+  onEditDestination,
+}: {
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  draft: Interaction;
+  setDraft: Dispatch<SetStateAction<Interaction>>;
+  fallbackMode: boolean;
+  isNew: boolean;
+  screen: InteractionEditorScreen;
+  setScreen: Dispatch<SetStateAction<InteractionEditorScreen>>;
+  newOutcomeIds: Set<string>;
+  setNewOutcomeIds: Dispatch<SetStateAction<Set<string>>>;
+  error?: string;
+  onClearError?: () => void;
+  onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
+  onEditDestination?: (nodeId: string) => void;
+}) {
+  const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
+  const sourceTraversalIndex = playState.traversal.lastIndexOf(draft.sourceNodeId);
+  const sourcePlayState = sourceTraversalIndex >= 0
+    ? { ...playState, currentNodeId: draft.sourceNodeId, currentNodeOpeningId: null, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
+    : { ...playState, currentNodeId: draft.sourceNodeId, currentNodeOpeningId: null };
+  const conversationCharacterId = resolveNodeConversationContext(snapshot, sourcePlayState, draft.sourceNodeId)?.characterId ?? null;
+
+  const configureOutcome = (id: string, change: (outcome: InteractionOutcome) => InteractionOutcome) => {
+    setDraft((current) => ({
+      ...current,
+      outcomes: current.outcomes.map((item) => item.id === id
+        ? { ...change(item), authorStatus: "configured" }
+        : item),
+    }));
+  };
+
+  const addResponseDraft = () => {
+    const outcome = createDraftOutcome(draft.outcomes.length, "", snapshot.settings.defaults.textSpeed);
+    setDraft((current) => ({ ...current, outcomes: [...current.outcomes, outcome] }));
+    setNewOutcomeIds((current) => new Set(current).add(outcome.id));
+    setScreen({ type: "response", outcomeId: outcome.id });
+  };
+
+  const moveOutcome = (outcomeId: string, direction: -1 | 1) => {
+    setDraft((current) => {
+      const index = current.outcomes.findIndex((outcome) => outcome.id === outcomeId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.outcomes.length) return current;
+      const outcomes = [...current.outcomes];
+      [outcomes[index], outcomes[target]] = [outcomes[target], outcomes[index]];
+      return { ...current, outcomes: outcomes.map((item, order) => ({ ...item, order })) };
+    });
+  };
+
+  const removeOutcome = (outcomeId: string) => {
+    setDraft((current) => ({
+      ...current,
+      outcomes: current.outcomes.filter((outcome) => outcome.id !== outcomeId).map((outcome, order) => ({ ...outcome, order })),
+    }));
+    setNewOutcomeIds((current) => {
+      const next = new Set(current);
+      next.delete(outcomeId);
+      return next;
+    });
+    setScreen({ type: "overview" });
+  };
+
+  const notationForOutcome = (outcome: InteractionOutcome) => {
+    if (outcome.authorStatus === "draft") return "[D]";
+    const destination = flowDestination(outcome.after);
+    if (!destination) return "[H]";
+    return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, destination.nodeId).join("") || "[A1]";
+  };
+
+  const selectedOutcome = "outcomeId" in screen
+    ? draft.outcomes.find((outcome) => outcome.id === screen.outcomeId)
+    : undefined;
+
+  const back = () => {
+    onClearError?.();
+    setScreen({ type: "overview" });
+  };
+
+  const title = screen.type === "overview"
+    ? fallbackMode ? "INVALID INPUT" : (authorSemanticReferenceView(draft.wording.trim(), { snapshot, state: sourcePlayState, authorMode: true }).text || "NEW USER INPUT").toUpperCase()
+    : screen.type === "input-settings" ? "INPUT SETTINGS"
+    : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
+
+  return <section className="interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
+    <header className="guided-editor-header">
+      {screen.type !== "overview" ? <button type="button" className="guided-back" onClick={back} aria-label="Back to input">[‹ INPUT]</button> : null}
+      <span>{title}</span>
+      <small>#{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</small>
+    </header>
+
+    <div className="author-panel-body guided-editor-body">
+      {screen.type === "overview" ? <InteractionOverview
+        draft={draft}
+        playState={sourcePlayState}
+        fallbackMode={fallbackMode}
+        snapshot={snapshot}
+        conversationCharacterId={conversationCharacterId}
+        notationForOutcome={notationForOutcome}
+        autoFocusWording={isNew}
+        onWording={(wording) => setDraft({ ...draft, wording })}
+        onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
+        onAddResponse={addResponseDraft}
+        onOpenSettings={() => setScreen({ type: "input-settings" })}
+      /> : null}
+
+      {screen.type === "input-settings" ? <InputSettings
+        draft={draft}
+        fallbackMode={fallbackMode}
+        snapshot={snapshot}
+        playState={sourcePlayState}
+        onChange={setDraft}
+      /> : null}
+
+      {screen.type === "response" && selectedOutcome ? <ResponseWorkspace
+        outcome={selectedOutcome}
+        snapshot={snapshot}
+        index={draft.outcomes.findIndex((outcome) => outcome.id === selectedOutcome.id)}
+        total={draft.outcomes.length}
+        notation={notationForOutcome(selectedOutcome)}
+        autoFocusText={isNew || newOutcomeIds.has(selectedOutcome.id)}
+        conversationCharacterId={conversationCharacterId}
+        onPreview={onPreview ? (value, speakerId) => onPreview(value, speakerId, selectedOutcome) : undefined}
+        playState={sourcePlayState}
+        onCreateDestination={onCreateDestination}
+        onEditDestination={onEditDestination}
+        onChange={(change) => configureOutcome(selectedOutcome.id, change)}
+        onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
+        onRemove={draft.outcomes.length > 1 ? () => removeOutcome(selectedOutcome.id) : undefined}
+      /> : null}
+
+      {error ? <div className="author-message guided-editor-error" role="alert">{error}</div> : null}
+    </div>
+  </section>;
+}
+
+function InteractionOverview({
+  draft,
+  fallbackMode,
+  snapshot,
+  playState,
+  conversationCharacterId,
+  notationForOutcome,
+  autoFocusWording,
+  onWording,
+  onOpenResponse,
+  onAddResponse,
+  onOpenSettings,
+}: {
+  draft: Interaction;
+  fallbackMode: boolean;
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  conversationCharacterId: string | null;
+  notationForOutcome: (outcome: InteractionOutcome) => string;
+  autoFocusWording: boolean;
+  onWording: (wording: string) => void;
+  onOpenResponse: (outcomeId: string) => void;
+  onAddResponse: () => void;
+  onOpenSettings: () => void;
+}) {
+  return <div className="interaction-overview">
+    {!fallbackMode ? <section className="guided-section interaction-primary-section">
+      <h3>PLAYER INPUT <AuthorHelp label="About Character names in inputs" text="Type @ to insert a Character reference. The canonical name and aliases will all match this input." /></h3>
+      <label className="user-input-field">PLAYER ENTERS
+        <ValueMentionField snapshot={snapshot} playState={playState} value={draft.wording} onValueChange={onWording} autoFocus={autoFocusWording} ariaLabel="Player enters" />
+      </label>
+    </section> : <div className="author-ui-field-heading"><strong>INVALID INPUT</strong><AuthorHelp label="About invalid input" text="This response is used when the text entered by the player matches no valid input on this Node." /></div>}
+
+    <section className="guided-section interaction-response-section">
+      <h3>RESPONSES</h3>
+      <div className="response-summary-list">
+        {draft.outcomes.map((outcome, index) => <button type="button" className="response-summary-row" key={outcome.id} onClick={() => onOpenResponse(outcome.id)}>
+          <span className={`response-summary-notation${outcome.authorStatus === "draft" ? " draft-input" : ""}`}>{notationForOutcome(outcome)}</span>
+          <span className="response-summary-content">
+            <strong>{index + 1}. {responseSnippet(outcome)}</strong>
+            <small>{responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · {conditionSummary(outcome.condition)} · {destinationLabel(snapshot, outcome)} · {outcome.effects.length + flowEffectsCount(outcome.after)} effect{outcome.effects.length + flowEffectsCount(outcome.after) === 1 ? "" : "s"}</small>
+          </span>
+          <span aria-hidden="true">›</span>
+        </button>)}
+      </div>
+      <button type="button" className="guided-add" onClick={onAddResponse}>[+ ADD RESPONSE]</button>
+    </section>
+
+    <section className="guided-section interaction-settings-summary">
+      <button type="button" className="guided-drill-row" onClick={onOpenSettings}>
+        <span>INPUT SETTINGS</span>
+        <span className="guided-row-value">{draft.outcomeSelection === "random" ? "Random responses · " : ""}{fallbackMode ? "Author details" : "Aliases · visibility · details"}</span>
+        <span aria-hidden="true">›</span>
+      </button>
+    </section>
+  </div>;
+}
+
+function InputSettings({ draft, fallbackMode, snapshot, playState, onChange }: {
+  draft: Interaction;
+  fallbackMode: boolean;
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  onChange: (interaction: Interaction) => void;
+}) {
+  const aliases = secondaryAliases(draft.wording, draft.aliases);
+  const choiceVisibleWhen = draft.choiceVisibleWhen ?? ALWAYS;
+  return <div className="guided-subworkspace">
+    {!fallbackMode ? <>
+      <section className="guided-section">
+        <h3>PLAYER VISIBILITY <AuthorHelp label="About input visibility" text="SHOW CHOICE WHEN affects whether the input is suggested to the player, not whether typed text is valid." /></h3>
+        <OutcomeComposerSection title="SHOW CHOICE WHEN" summary={conditionSummary(choiceVisibleWhen)}>
+          <ConditionEditor
+            condition={choiceVisibleWhen}
+            snapshot={snapshot}
+            onChange={(condition) => onChange({ ...draft, choiceVisibleWhen: condition })}
+          />
+        </OutcomeComposerSection>
+        <h4>HOW IT IS SHOWN</h4>
+        <div className="guided-option-list">{revealOptions.map((option) => <div className="guided-option-with-help" key={option.value}><button
+          type="button"
+          aria-pressed={draft.choiceVisibility === option.value}
+          className="guided-option-row"
+          onClick={() => onChange({ ...draft, choiceVisibility: option.value })}
+        >
+          <span>{draft.choiceVisibility === option.value ? "[X]" : "[ ]"} {option.label}</span>
+        </button><AuthorHelp label={`About ${option.label}`} text={option.help} /></div>)}</div>
+      </section>
+      <section className="guided-section">
+        <h3>OTHER WORDING</h3>
+        <label>ALTERNATE PHRASES
+          <ValueMentionField snapshot={snapshot} playState={playState} multiline rows={4} value={aliases.join("\n")} placeholder="one alternate phrase per line" onValueChange={(value) => {
+            const other = value.split("\n");
+            onChange({ ...draft, aliases: [draft.wording, ...other] });
+          }} />
+        </label>
+      </section>
+    </> : null}
+    <section className="guided-section">
+      <h3>RESPONSE SELECTION</h3>
+      <div className="guided-option-list">
+        <div className="guided-option-with-help"><button
+          type="button"
+          className="guided-option-row"
+          aria-pressed={(draft.outcomeSelection ?? "first") === "first"}
+          onClick={() => onChange({ ...draft, outcomeSelection: "first" })}
+        >
+          <span>{(draft.outcomeSelection ?? "first") === "first" ? "[X]" : "[ ]"} FIRST MATCHING</span>
+        </button><AuthorHelp label="About first matching response" text="Use the first response whose WHEN condition currently matches." /></div>
+        <div className="guided-option-with-help"><button
+          type="button"
+          className="guided-option-row"
+          aria-pressed={draft.outcomeSelection === "random"}
+          onClick={() => onChange({ ...draft, outcomeSelection: "random" })}
+        >
+          <span>{draft.outcomeSelection === "random" ? "[X]" : "[ ]"} RANDOM MATCHING</span>
+        </button><AuthorHelp label="About random matching response" text="Choose deterministically from all responses whose WHEN conditions currently match." /></div>
+      </div>
+    </section>
+    <section className="guided-section">
+      <h3>AUTHOR DETAILS</h3>
+      <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => onChange({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
+      <label>AUTHOR NOTE <textarea rows={3} value={draft.notes} onChange={(event) => onChange({ ...draft, notes: event.target.value })} /></label>
+    </section>
+  </div>;
+}
+
+function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, autoFocusText, conversationCharacterId, onPreview, onCreateDestination, onEditDestination, onChange, onMove, onRemove }: {
+  outcome: InteractionOutcome;
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  index: number;
+  total: number;
+  notation: string;
+  autoFocusText: boolean;
+  conversationCharacterId: string | null;
+  onPreview?: (value: AuthoredTextValue, speakerId: string | null) => void;
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
+  onEditDestination?: (nodeId: string) => void;
+  onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
+  onMove: (direction: -1 | 1) => void;
+  onRemove?: () => void;
+}) {
+  const prose = interactionOutcomeProse(outcome);
+  const dialogueSpeakerId = conversationCharacterId ?? outcome.speakerId ?? null;
+  const dialogueSpeakerName = dialogueSpeakerId
+    ? snapshot.entities.find((entity) => entity.type === "character" && entity.id === dialogueSpeakerId)?.name ?? "Unknown character"
+    : "";
+  const showDialogueEditor = Boolean(conversationCharacterId || outcome.speakerId || prose.dialogueText.trim());
+  const dialogueLabel = dialogueSpeakerName
+    ? `${dialogueSpeakerName.toUpperCase()} SAYS`
+    : "DIALOGUE — CHOOSE SPEAKER";
+
+  return <div className="guided-subworkspace response-workspace">
+    <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
+    <section className="response-writing-section">
+      {!conversationCharacterId ? <div className="author-ui-field">
+        <div className="author-ui-field-heading"><span>SPEAKER</span><AuthorHelp label="About response speakers" text="Optional outside a conversation. During a conversation, the Node’s conversation Character is the speaker automatically." /></div>
+        <ReferenceField
+          kind="character"
+          value={outcome.speakerId ?? ""}
+          onChange={(speakerId) => onChange((current) => ({ ...current, speakerId: speakerId || null }))}
+          placeholder="none / narration"
+        />
+      </div> : null}
+      <div className={`narrative-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
+        <AuthoredTextEditor
+          value={{ text: prose.narrationText, performance: prose.narrationPerformance }}
+          snapshot={snapshot}
+          playState={playState}
+          label={captureFlowParts(outcome.after) ? "NARRATION · BEFORE INPUT" : "NARRATION"}
+          rows={4}
+          autoFocus={autoFocusText && !dialogueSpeakerId}
+          onChange={(value) => onChange((current) => ({
+            ...current,
+            responseText: value.text,
+            responsePerformance: value.performance,
+          }))}
+          onPreview={onPreview ? (value) => onPreview(value, null) : undefined}
+        />
+        {showDialogueEditor ? <AuthoredTextEditor
+          value={{ text: prose.dialogueText, performance: prose.dialoguePerformance }}
+          snapshot={snapshot}
+          playState={playState}
+          label={captureFlowParts(outcome.after) ? `${dialogueLabel} · BEFORE INPUT` : dialogueLabel}
+          rows={4}
+          autoFocus={autoFocusText && Boolean(dialogueSpeakerId)}
+          onChange={(value) => onChange((current) => ({
+            ...current,
+            dialogueText: value.text,
+            dialoguePerformance: value.performance,
+          }))}
+          onPreview={onPreview ? (value) => onPreview(value, dialogueSpeakerId) : undefined}
+        /> : null}
+      </div>
+    </section>
+    <div className="interaction-outcome-composer" aria-label="Complete response outcome">
+      <OutcomeComposerSection title="WHEN" summary={conditionSummary(outcome.condition)}>
+        <OutcomeConditionEditor condition={outcome.condition} snapshot={snapshot} onChange={(condition) => onChange((current) => ({ ...current, condition }))} />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="AFTER" summary={destinationLabel(snapshot, outcome)}>
+        <NarrativeAfterEditor
+          snapshot={snapshot}
+          playState={playState}
+          flow={outcome.after}
+          conversationCharacterId={conversationCharacterId}
+          onCreateDestination={onCreateDestination}
+          onEditDestination={onEditDestination}
+          onPreview={onPreview}
+          onChange={(after) => onChange((current) => ({ ...current, after }))}
+        />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="EFFECTS" summary={outcome.effects.length ? `${outcome.effects.length} configured` : "None"}>
+        <OutcomeEffectsEditor effects={outcome.effects} snapshot={snapshot} onChange={(effects) => onChange((current) => ({ ...current, effects }))} />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="AUTHOR DETAILS" summary={outcome.label.trim() || "Optional label"}>
+        <div className="author-ui-field"><div className="author-ui-field-heading"><label htmlFor="response-private-label">RESPONSE LABEL</label><AuthorHelp label="About response labels" text="A private author-facing label. It never appears to players." /></div><input id="response-private-label" value={outcome.label} placeholder="optional private label" onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></div>
+      </OutcomeComposerSection>
+    </div>
+    <div className="guided-response-actions">
+      <button type="button" onClick={() => onMove(-1)} disabled={index === 0}>[MOVE UP]</button>
+      <button type="button" onClick={() => onMove(1)} disabled={index === total - 1}>[MOVE DOWN]</button>
+      {onRemove ? <button type="button" onClick={onRemove}>[REMOVE RESPONSE]</button> : null}
+    </div>
+  </div>;
+}

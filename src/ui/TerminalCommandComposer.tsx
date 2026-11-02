@@ -1,0 +1,481 @@
+import {
+  forwardRef,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
+import { createPortal } from "react-dom";
+
+export type TerminalCommandChoice = {
+  id: string;
+  text: string;
+  /** Optional authored copy for the expanded suggestion menu's info affordance. */
+  menuHelpText?: string | null;
+};
+
+export type TerminalCommandAnchor = {
+  text: string;
+  onEdit?: () => void;
+};
+
+export type TerminalCommandComposerHandle = {
+  focus: () => void;
+};
+
+type TerminalCommandComposerProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (value: string) => void;
+  secret?: boolean;
+  immediateChoices?: TerminalCommandChoice[];
+  menuChoices?: TerminalCommandChoice[];
+  anchor?: TerminalCommandAnchor | null;
+  ariaLabel: string;
+};
+
+const MAX_VISIBLE_LINES = 4;
+const COARSE_POINTER_QUERY = "(pointer: coarse)";
+
+export function normalizeTerminalDraft(value: string) {
+  return value.replace(/\r\n?|\n/g, " ");
+}
+
+function mergeChoices(
+  immediateChoices: TerminalCommandChoice[],
+  menuChoices: TerminalCommandChoice[],
+  menuOpen: boolean,
+) {
+  const seen = new Set<string>();
+  return [...immediateChoices, ...(menuOpen ? menuChoices : [])].filter((choice) => {
+    if (!choice.text || seen.has(choice.id)) return false;
+    seen.add(choice.id);
+    return true;
+  });
+}
+
+function activeCaretIndex(field: HTMLInputElement | HTMLTextAreaElement) {
+  const start = field.selectionStart ?? field.value.length;
+  const end = field.selectionEnd ?? start;
+  if (start === end) return start;
+  return field.selectionDirection === "backward" ? start : end;
+}
+
+export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle, TerminalCommandComposerProps>(
+  function TerminalCommandComposer({
+    label,
+    value,
+    onChange,
+    onSubmit,
+    secret = false,
+    immediateChoices = [],
+    menuChoices = [],
+    anchor = null,
+    ariaLabel,
+  }, ref) {
+    const stackRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const secretInputRef = useRef<HTMLInputElement>(null);
+    const editorRef = useRef<HTMLDivElement>(null);
+    const mirrorRef = useRef<HTMLDivElement>(null);
+    const caretMarkerRef = useRef<HTMLSpanElement>(null);
+    const choicesRef = useRef<HTMLDivElement>(null);
+    const menuHelpTriggerRef = useRef<HTMLButtonElement>(null);
+    const composingRef = useRef(false);
+    const caretFrameRef = useRef(0);
+    const menuHelpId = useId();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuHelpOpen, setMenuHelpOpen] = useState(false);
+    const [menuHelpPosition, setMenuHelpPosition] = useState({ top: 0, left: 0, width: 0 });
+    const [caretIndex, setCaretIndex] = useState(0);
+
+    const field = () => secret ? secretInputRef.current : textareaRef.current;
+
+    useImperativeHandle(ref, () => ({
+      focus: () => field()?.focus({ preventScroll: true }),
+    }), [secret]);
+
+    const choices = useMemo(
+      () => mergeChoices(immediateChoices, menuChoices, menuOpen),
+      [immediateChoices, menuChoices, menuOpen],
+    );
+    const menuHelpText = useMemo(() => {
+      for (const choice of menuChoices) {
+        const text = choice.menuHelpText?.trim();
+        if (text) return text;
+      }
+      return null;
+    }, [menuChoices]);
+
+    const syncSelection = () => {
+      const current = field();
+      if (!current) return;
+      setCaretIndex(Math.min(current.value.length, activeCaretIndex(current)));
+    };
+
+    const syncCaret = () => {
+      const current = field();
+      const editor = editorRef.current;
+      const mirror = mirrorRef.current;
+      const marker = caretMarkerRef.current;
+      if (!current || !editor || !mirror || !marker) return;
+
+      mirror.style.width = `${current.clientWidth}px`;
+      const markerRect = marker.getBoundingClientRect();
+      const mirrorRect = mirror.getBoundingClientRect();
+      const style = window.getComputedStyle(current);
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) || 16;
+      const caretHeight = Math.max(2, (parseFloat(style.fontSize) || 16) * 0.125);
+      const left = markerRect.left - mirrorRect.left - current.scrollLeft;
+      const top = markerRect.top - mirrorRect.top - current.scrollTop + lineHeight - caretHeight;
+
+      editor.style.setProperty("--terminal-command-caret-x", `${Math.max(0, left)}px`);
+      editor.style.setProperty("--terminal-command-caret-y", `${Math.max(0, top)}px`);
+      editor.dataset.caretReady = "true";
+    };
+
+    const queueCaretSync = () => {
+      window.cancelAnimationFrame(caretFrameRef.current);
+      caretFrameRef.current = window.requestAnimationFrame(() => {
+        syncSelection();
+        syncCaret();
+      });
+    };
+
+    useLayoutEffect(() => {
+      const stack = stackRef.current;
+      if (!stack) return;
+      const root = document.documentElement;
+      let frame = 0;
+      const publishOrigin = () => {
+        window.cancelAnimationFrame(frame);
+        frame = window.requestAnimationFrame(() => {
+          const rect = stack.getBoundingClientRect();
+          root.style.setProperty("--terminal-command-right", `${rect.right}px`);
+          root.style.setProperty("--terminal-command-float-bottom", `${Math.max(0, window.innerHeight - rect.top + 4)}px`);
+        });
+      };
+      const resizeObserver = new ResizeObserver(publishOrigin);
+      resizeObserver.observe(stack);
+      const experienceObserver = new MutationObserver(publishOrigin);
+      experienceObserver.observe(root, { attributes: true, attributeFilter: ["data-author-experience"] });
+      window.addEventListener("resize", publishOrigin);
+      window.addEventListener("pointermove", publishOrigin, { passive: true });
+      document.fonts?.ready.then(publishOrigin).catch(() => undefined);
+      publishOrigin();
+      return () => {
+        window.cancelAnimationFrame(frame);
+        resizeObserver.disconnect();
+        experienceObserver.disconnect();
+        window.removeEventListener("resize", publishOrigin);
+        window.removeEventListener("pointermove", publishOrigin);
+      };
+    }, []);
+
+    useLayoutEffect(() => {
+      if (secret) return;
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const style = window.getComputedStyle(textarea);
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) || 16;
+      const paddingTop = parseFloat(style.paddingTop) || 0;
+      const paddingBottom = parseFloat(style.paddingBottom) || 0;
+      const maxHeight = lineHeight * MAX_VISIBLE_LINES + paddingTop + paddingBottom;
+
+      textarea.style.height = "auto";
+      const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+      textarea.style.height = `${nextHeight}px`;
+      textarea.style.overflowY = textarea.scrollHeight > maxHeight + 1 ? "auto" : "hidden";
+    }, [secret, value]);
+
+    useLayoutEffect(() => {
+      const current = field();
+      if (!current) return;
+      const next = Math.min(value.length, activeCaretIndex(current));
+      if (next !== caretIndex) setCaretIndex(next);
+      queueCaretSync();
+      return () => window.cancelAnimationFrame(caretFrameRef.current);
+    }, [secret, value, caretIndex]);
+
+    useLayoutEffect(() => {
+      const handleResize = () => queueCaretSync();
+      window.addEventListener("resize", handleResize);
+      document.fonts?.ready.then(handleResize).catch(() => undefined);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    useLayoutEffect(() => {
+      if (!menuHelpOpen || !menuHelpText) return;
+      const updatePosition = () => {
+        const trigger = menuHelpTriggerRef.current;
+        const choiceSurface = choicesRef.current;
+        if (!trigger || !choiceSurface) return;
+        const triggerRect = trigger.getBoundingClientRect();
+        const choiceRect = choiceSurface.getBoundingClientRect();
+        const viewportPadding = 8;
+        const availableWidth = Math.max(0, window.innerWidth - viewportPadding * 2);
+        const width = Math.min(Math.max(choiceRect.width, 280), availableWidth);
+        const preferredLeft = choiceRect.right - width;
+        const maxLeft = Math.max(viewportPadding, window.innerWidth - viewportPadding - width);
+        setMenuHelpPosition({
+          top: triggerRect.bottom + 4,
+          left: Math.min(Math.max(viewportPadding, preferredLeft), maxLeft),
+          width,
+        });
+      };
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+      };
+    }, [menuHelpOpen, menuHelpText]);
+
+    useEffect(() => {
+      if (!menuHelpOpen) return;
+      const closeOnOutsidePointer = (event: PointerEvent) => {
+        const target = event.target;
+        if (target instanceof Node && menuHelpTriggerRef.current?.contains(target)) return;
+        setMenuHelpOpen(false);
+      };
+      document.addEventListener("pointerdown", closeOnOutsidePointer, true);
+      return () => document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
+    }, [menuHelpOpen]);
+
+    const submit = () => {
+      if (composingRef.current) return;
+      setMenuOpen(false);
+      setMenuHelpOpen(false);
+      onSubmit(value);
+    };
+
+    const handleSubmit = (event: FormEvent) => {
+      event.preventDefault();
+      submit();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (event.key !== "Enter" || event.nativeEvent.isComposing || composingRef.current) return;
+      event.preventDefault();
+      submit();
+    };
+
+    const insertChoice = (choice: TerminalCommandChoice) => {
+      const next = normalizeTerminalDraft(choice.text);
+      onChange(next);
+      setMenuOpen(false);
+      setMenuHelpOpen(false);
+      window.requestAnimationFrame(() => {
+        const current = field();
+        if (!current) return;
+        const coarsePointer = window.matchMedia(COARSE_POINTER_QUERY).matches;
+        if (!coarsePointer || document.activeElement === current) {
+          current.focus({ preventScroll: true });
+        }
+        current.setSelectionRange(next.length, next.length);
+        setCaretIndex(next.length);
+        queueCaretSync();
+      });
+    };
+
+    const toggleMenu = () => {
+      const nextOpen = !menuOpen;
+      setMenuOpen(nextOpen);
+      if (!nextOpen) setMenuHelpOpen(false);
+      window.requestAnimationFrame(() => {
+        const current = field();
+        if (current && !window.matchMedia(COARSE_POINTER_QUERY).matches) {
+          current.focus({ preventScroll: true });
+        }
+        queueCaretSync();
+      });
+    };
+
+    const mirrorValue = secret ? "•".repeat(value.length) : value;
+    const mirrorCaret = Math.min(caretIndex, mirrorValue.length);
+
+    return <div ref={stackRef} className="terminal-command-stack">
+      <form
+        className="prompt-line terminal-command-composer"
+        onSubmit={handleSubmit}
+        onPointerDown={(event) => event.stopPropagation()}
+        data-secret={secret ? "true" : "false"}
+      >
+        <span className="terminal-command-label">{label}</span>
+        <div className="terminal-command-control">
+          <div
+            className={`terminal-command-shell${menuOpen ? " menu-open" : ""}`}
+            data-has-menu={menuChoices.length ? "true" : "false"}
+          >
+            <div className="terminal-command-editor" ref={editorRef}>
+              {secret ? <input
+                ref={secretInputRef}
+                className="terminal-command-field terminal-command-secret"
+                type="password"
+                value={value}
+                onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
+                onKeyDown={handleKeyDown}
+                onSelect={queueCaretSync}
+                onKeyUp={queueCaretSync}
+                onClick={queueCaretSync}
+                onPointerUp={queueCaretSync}
+                onScroll={queueCaretSync}
+                onFocus={queueCaretSync}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="send"
+                aria-label={ariaLabel}
+              /> : <textarea
+                ref={textareaRef}
+                className="terminal-command-field terminal-command-textarea"
+                rows={1}
+                value={value}
+                onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
+                onKeyDown={handleKeyDown}
+                onSelect={queueCaretSync}
+                onKeyUp={queueCaretSync}
+                onClick={queueCaretSync}
+                onPointerUp={queueCaretSync}
+                onScroll={queueCaretSync}
+                onFocus={queueCaretSync}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="send"
+                aria-label={ariaLabel}
+              />}
+              <div ref={mirrorRef} className="terminal-command-mirror" aria-hidden="true">
+                <span>{mirrorValue.slice(0, mirrorCaret)}</span>
+                <span ref={caretMarkerRef} className="terminal-command-caret-marker">​</span>
+                <span>{mirrorValue.slice(mirrorCaret) || "​"}</span>
+              </div>
+              <span className="terminal-command-caret" aria-hidden="true" />
+            </div>
+
+            {!secret && menuChoices.length ? <button
+              type="button"
+              className="terminal-command-toggle"
+              aria-label={menuOpen ? "Hide suggestions" : "Show suggestions"}
+              aria-expanded={menuOpen}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                if (!window.matchMedia(COARSE_POINTER_QUERY).matches) event.preventDefault();
+              }}
+              onClick={toggleMenu}
+            >{menuOpen ? "▲" : "▼"}</button> : null}
+
+            {!secret && choices.length ? <div
+              ref={choicesRef}
+              className="terminal-command-choices"
+              aria-label="Suggested inputs"
+            >
+              {menuOpen && menuHelpText ? <div
+                className="terminal-command-menu-help"
+                data-open={menuHelpOpen ? "true" : "false"}
+              >
+                <button
+                  ref={menuHelpTriggerRef}
+                  type="button"
+                  className="terminal-command-menu-help-trigger"
+                  aria-label="About these suggestions"
+                  aria-describedby={menuHelpOpen ? menuHelpId : undefined}
+                  aria-expanded={menuHelpOpen}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onPointerEnter={() => {
+                    if (!window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen(true);
+                  }}
+                  onPointerLeave={() => {
+                    if (!window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen(false);
+                  }}
+                  onFocus={() => setMenuHelpOpen(true)}
+                  onBlur={() => setMenuHelpOpen(false)}
+                  onClick={() => {
+                    if (window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen((open) => !open);
+                    else setMenuHelpOpen(true);
+                  }}
+                >[i]</button>
+              </div> : null}
+              {choices.map((choice) => <button
+                type="button"
+                className="terminal-command-choice"
+                key={choice.id}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => insertChoice(choice)}
+              >{choice.text}</button>)}
+            </div> : null}
+          </div>
+
+          {!secret ? <button
+            type="button"
+            className="terminal-command-submit"
+            aria-label="Submit command"
+            title="Submit command"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onClick={submit}
+          >↵</button> : null}
+        </div>
+      </form>
+
+      {!secret && anchor?.text ? anchor.onEdit
+        ? <button
+          type="button"
+          className="terminal-node-anchor terminal-node-anchor-editable"
+          aria-label="Edit anchor source"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={anchor.onEdit}
+        >{anchor.text}</button>
+        : <div className="terminal-node-anchor">{anchor.text}</div>
+      : null}
+
+      {menuHelpOpen && menuHelpText ? createPortal(
+        <div
+          id={menuHelpId}
+          role="tooltip"
+          style={{
+            position: "fixed",
+            zIndex: 2147483000,
+            top: menuHelpPosition.top,
+            left: menuHelpPosition.left,
+            boxSizing: "border-box",
+            width: menuHelpPosition.width,
+            maxHeight: `calc(100dvh - ${menuHelpPosition.top + 8}px)`,
+            overflowY: "auto",
+            margin: 0,
+            padding: ".55em .65em",
+            border: "1px solid #000",
+            background: "#fff",
+            color: "#000",
+            font: "inherit",
+            fontSize: ".86em",
+            lineHeight: 1.35,
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+            pointerEvents: "none",
+            visibility: menuHelpPosition.width ? "visible" : "hidden",
+          }}
+        >
+          {menuHelpText}
+        </div>,
+        document.body,
+      ) : null}
+    </div>;
+  },
+);

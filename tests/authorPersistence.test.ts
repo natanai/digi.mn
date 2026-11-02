@@ -1,0 +1,298 @@
+import { describe, expect, it } from "vitest";
+import {
+  flushQueuedAuthorMutations,
+  persistAuthorMutation,
+  type AuthorLocalPersistence,
+} from "../src/author/persistence/authorProjectPersistence";
+import { applyOperations } from "../src/engine/project/mutations";
+import type { MutationOperation, ProjectMutation, ProjectSnapshot } from "../src/engine/project/model";
+import {
+  ProjectRevisionConflictError,
+  ProjectWriteRejectedError,
+  type ProjectPersistence,
+} from "../src/platform/persistence/projectPersistence";
+import type { QueuedMutation } from "../src/data/localProject";
+import { node, project } from "./fixtures";
+
+function mutation(description: string, expectedRevision: number, operations: MutationOperation[]): ProjectMutation {
+  return { description, expectedRevision, operations };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
+function localStore(initial: QueuedMutation[] = []) {
+  let queued = structuredClone(initial);
+  const cached: ProjectSnapshot[] = [];
+  let nextId = 1;
+  const local: AuthorLocalPersistence = {
+    async saveCachedSnapshot(snapshot) {
+      cached.push(structuredClone(snapshot));
+      return true;
+    },
+    async queueMutation(value) {
+      const id = `queued-${nextId++}`;
+      queued.push({ id, mutation: structuredClone(value), queuedAt: new Date(nextId * 1_000).toISOString() });
+      return { id, stored: true };
+    },
+    async removeQueuedMutation(id) {
+      queued = queued.filter((entry) => entry.id !== id);
+    },
+    async listQueuedMutations() {
+      return structuredClone(queued);
+    },
+  };
+  return { local, queued: () => queued, cached };
+}
+
+function memoryPersistence(initial: ProjectSnapshot) {
+  let server = structuredClone(initial);
+  const writes: ProjectMutation[] = [];
+  const persistence: ProjectPersistence = {
+    async readProject() {
+      return structuredClone(server);
+    },
+    async writeProject(value) {
+      writes.push(structuredClone(value));
+      if (value.expectedRevision !== server.revision) throw new Error("unexpected test revision");
+      server = { ...applyOperations(server, value.operations), revision: server.revision + 1 };
+      return structuredClone(server);
+    },
+  };
+  return { persistence, writes, snapshot: () => server };
+}
+
+describe("Author project persistence", () => {
+  it("publishes queued dependencies before a later edit that references their state", async () => {
+    const hosted = project({ revision: 10 });
+    const earlier = mutation("Created dependency", 10, [{ type: "node.upsert", node: node("b", 2) }]);
+    const localSnapshot = applyOperations(hosted, earlier.operations);
+    const current = mutation("Saved dependent edit", 10, [{ type: "node.upsert", node: node("c", 3) }]);
+    const optimistic = applyOperations(localSnapshot, current.operations);
+    const queue = localStore([{ id: "earlier", mutation: earlier, queuedAt: new Date(1_000).toISOString() }]);
+    const remote = memoryPersistence(hosted);
+
+    const result = await persistAuthorMutation({
+      persistence: remote.persistence,
+      authorization: "token",
+      mutation: current,
+      optimisticSnapshot: optimistic,
+      previousSnapshot: localSnapshot,
+      local: queue.local,
+    });
+
+    expect(result.status).toBe("saved");
+    expect(remote.writes.map((entry) => [entry.description, entry.expectedRevision])).toEqual([
+      ["Created dependency", 10],
+      ["Saved dependent edit", 11],
+    ]);
+    expect(remote.snapshot().nodes.map((entry) => entry.id)).toEqual(["a", "b", "c"]);
+    expect(queue.queued()).toEqual([]);
+  });
+
+  it("rebases a foreground save after this browser's background queue flush advances the revision", async () => {
+    const hosted = project({ revision: 10 });
+    const earlier = mutation("Created dependency", 10, [{ type: "node.upsert", node: node("b", 2) }]);
+    const localSnapshot = applyOperations(hosted, earlier.operations);
+    const current = mutation("Saved dependent edit", 10, [{ type: "node.upsert", node: node("c", 3) }]);
+    const optimistic = applyOperations(localSnapshot, current.operations);
+    const queue = localStore([{ id: "earlier", mutation: earlier, queuedAt: new Date(1_000).toISOString() }]);
+    const firstWriteStarted = deferred<void>();
+    const releaseFirstWrite = deferred<void>();
+    let server = structuredClone(hosted);
+    const writes: ProjectMutation[] = [];
+    let writeCount = 0;
+    const persistence: ProjectPersistence = {
+      async readProject() {
+        return structuredClone(server);
+      },
+      async writeProject(value) {
+        writes.push(structuredClone(value));
+        if (writeCount === 0) {
+          writeCount += 1;
+          firstWriteStarted.resolve();
+          await releaseFirstWrite.promise;
+        }
+        if (value.expectedRevision !== server.revision) {
+          throw new ProjectRevisionConflictError(`Expected ${value.expectedRevision}; current ${server.revision}`);
+        }
+        server = { ...applyOperations(server, value.operations), revision: server.revision + 1 };
+        return structuredClone(server);
+      },
+    };
+
+    const background = flushQueuedAuthorMutations({
+      persistence,
+      authorization: "token",
+      local: queue.local,
+    });
+    await firstWriteStarted.promise;
+
+    const foreground = persistAuthorMutation({
+      persistence,
+      authorization: "token",
+      mutation: current,
+      optimisticSnapshot: optimistic,
+      previousSnapshot: localSnapshot,
+      local: queue.local,
+    });
+
+    releaseFirstWrite.resolve();
+    const [flushResult, saveResult] = await Promise.all([background, foreground]);
+
+    expect(flushResult.flushedCount).toBe(1);
+    expect(saveResult.status).toBe("saved");
+    expect(writes.map((entry) => [entry.description, entry.expectedRevision])).toEqual([
+      ["Created dependency", 10],
+      ["Saved dependent edit", 11],
+    ]);
+    expect(server.nodes.map((entry) => entry.id)).toEqual(["a", "b", "c"]);
+    expect(server.revision).toBe(12);
+    expect(queue.queued()).toEqual([]);
+  });
+
+  it("does not treat an external project change as this browser's own safe rebase", async () => {
+    const localBase = project({ revision: 10 });
+    const earlier = mutation("Created dependency", 10, [{ type: "node.upsert", node: node("b", 2) }]);
+    const localSnapshot = applyOperations(localBase, earlier.operations);
+    const current = mutation("Saved dependent edit", 10, [{ type: "node.upsert", node: node("c", 3) }]);
+    const optimistic = applyOperations(localSnapshot, current.operations);
+    const queue = localStore([{ id: "earlier", mutation: earlier, queuedAt: new Date(1_000).toISOString() }]);
+    const external = { ...applyOperations(localBase, [{ type: "node.upsert", node: node("x", 9) }]), revision: 11 };
+    let server = structuredClone(external);
+    const writes: ProjectMutation[] = [];
+    const persistence: ProjectPersistence = {
+      async readProject() {
+        return structuredClone(server);
+      },
+      async writeProject(value) {
+        writes.push(structuredClone(value));
+        if (value.expectedRevision !== server.revision) {
+          throw new ProjectRevisionConflictError(`Expected ${value.expectedRevision}; current ${server.revision}`);
+        }
+        server = { ...applyOperations(server, value.operations), revision: server.revision + 1 };
+        return structuredClone(server);
+      },
+    };
+
+    const flushResult = await flushQueuedAuthorMutations({
+      persistence,
+      authorization: "token",
+      local: queue.local,
+    });
+    expect(flushResult.flushedCount).toBe(1);
+    expect(server.revision).toBe(12);
+
+    const saveResult = await persistAuthorMutation({
+      persistence,
+      authorization: "token",
+      mutation: current,
+      optimisticSnapshot: optimistic,
+      previousSnapshot: localSnapshot,
+      local: queue.local,
+    });
+
+    expect(saveResult.status).toBe("conflict");
+    expect(writes.map((entry) => [entry.description, entry.expectedRevision])).toEqual([
+      ["Created dependency", 11],
+      ["Saved dependent edit", 10],
+    ]);
+    expect(server.nodes.map((entry) => entry.id)).toEqual(["a", "x", "b"]);
+    expect(server.nodes.some((entry) => entry.id === "c")).toBe(false);
+  });
+
+  it("keeps a transiently unavailable write in this browser's durable queue", async () => {
+    const before = project({ revision: 4 });
+    const operation = { type: "node.upsert" as const, node: node("b", 2) };
+    const optimistic = applyOperations(before, [operation]);
+    const queue = localStore();
+    const persistence: ProjectPersistence = {
+      async readProject() { return before; },
+      async writeProject() { throw new TypeError("offline"); },
+    };
+
+    const result = await persistAuthorMutation({
+      persistence,
+      authorization: "token",
+      mutation: mutation("Offline edit", 4, [operation]),
+      optimisticSnapshot: optimistic,
+      previousSnapshot: before,
+      local: queue.local,
+    });
+
+    expect(result.status).toBe("queued");
+    expect(queue.queued()).toHaveLength(1);
+    expect(queue.cached.at(-1)?.nodes.some((entry) => entry.id === "b")).toBe(true);
+  });
+
+  it("does not disguise a rejected payload as an offline save", async () => {
+    const before = project({ revision: 7 });
+    const operation = { type: "node.upsert" as const, node: node("b", 2) };
+    const queue = localStore();
+    const persistence: ProjectPersistence = {
+      async readProject() { return before; },
+      async writeProject() { throw new ProjectWriteRejectedError("Referenced item is missing."); },
+    };
+
+    const result = await persistAuthorMutation({
+      persistence,
+      authorization: "token",
+      mutation: mutation("Invalid edit", 7, [operation]),
+      optimisticSnapshot: applyOperations(before, [operation]),
+      previousSnapshot: before,
+      local: queue.local,
+    });
+
+    expect(result).toMatchObject({ status: "failed", message: "Referenced item is missing." });
+    expect(queue.queued()).toEqual([]);
+    expect(queue.cached.at(-1)).toEqual(before);
+  });
+
+  it("persists a Player Command project-settings mutation through a reload", async () => {
+    const before = project({ revision: 9 });
+    const inspectCommand = {
+      id: "inspect-character",
+      label: "Inspect",
+      enabled: true,
+      patterns: ["inspect {target}", "{target} looks like what?!"],
+      slots: [{ name: "target", sourceKinds: ["world.character"] }],
+      action: { type: "target-operation" as const, operation: "inspect", targetSlot: "target" },
+    };
+    const settings = {
+      ...before.settings,
+      commands: {
+        ...before.settings.commands,
+        referenceSources: [{ sourceKind: "world.character", enabled: true, includeDefaults: true, aliases: {} }],
+        commands: [inspectCommand],
+      },
+    };
+    const operation = { type: "project.settings" as const, settings };
+    const optimistic = applyOperations(before, [operation]);
+    const queue = localStore();
+    const remote = memoryPersistence(before);
+
+    const result = await persistAuthorMutation({
+      persistence: remote.persistence,
+      authorization: "token",
+      mutation: mutation("Created command Inspect", 9, [operation]),
+      optimisticSnapshot: optimistic,
+      previousSnapshot: before,
+      local: queue.local,
+    });
+
+    expect(result.status).toBe("saved");
+    const reloaded = await remote.persistence.readProject();
+    expect(reloaded.settings.commands.commands).toEqual([inspectCommand]);
+    expect(reloaded.settings.commands.referenceSources).toEqual([
+      { sourceKind: "world.character", enabled: true, includeDefaults: true, aliases: {} },
+    ]);
+    expect(queue.queued()).toEqual([]);
+  });
+});

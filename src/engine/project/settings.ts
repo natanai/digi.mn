@@ -1,0 +1,120 @@
+import {
+  DEFAULT_COMMANDS_PROJECT_SETTINGS,
+  normalizeCommandsProjectSettings,
+  type CommandsProjectSettingsSlice,
+} from "../../features/commands/projectSettings";
+import {
+  normalizeInventoryMutationOperation,
+  normalizeInventoryProjectSlice,
+} from "../../features/inventory/projectNormalization";
+import {
+  normalizeNarrativeMutationOperation,
+  normalizeNarrativeProjectSlice,
+} from "../../features/narrative/projectNormalization";
+import {
+  DEFAULT_RADIX_PROJECT_SETTINGS,
+  normalizeRadixProjectSettings,
+  type RadixProjectSettingsSlice,
+} from "../../features/radix/projectSettings";
+import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
+import { DEFAULT_INVENTORY_PROJECT_SETTINGS, normalizeInventoryProjectSettings, type InventoryProjectSettingsSlice } from "../../features/inventory/projectSettings";
+import { DEFAULT_WORLD_PROJECT_SETTINGS, normalizeWorldProjectSettings, type WorldProjectSettingsSlice } from "../../features/world/projectSettings";
+import { DEFAULT_STATE_PROJECT_SETTINGS, normalizeStateProjectSettings, type StateProjectSettingsSlice } from "../../features/state/projectSettings";
+import { migrateSnapshotReferenceTokens } from "../references/migration";
+import type { ProjectMutation, ProjectSnapshot } from "./model";
+import { DEFAULT_PROJECT_DEFAULTS, normalizeProjectDefaults, type ProjectDefaults } from "./defaults";
+
+export type ProjectSettings = {
+  /** Player-facing terminal prompt for this game/project. */
+  terminalPrompt: string;
+  /** Optional authored copy exposed from the expanded terminal suggestion menu's info affordance. */
+  suggestionMenuHelpText: string | null;
+  /** Author-selected values used when creating new project content. */
+  defaults: ProjectDefaults;
+} & CommandsProjectSettingsSlice
+  & RadixProjectSettingsSlice
+  & InventoryProjectSettingsSlice
+  & WorldProjectSettingsSlice
+  & StateProjectSettingsSlice;
+
+/** Stored semantic-reference tokens can exceed their short Author-visible @ names. */
+export const MAX_TERMINAL_PROMPT_LENGTH = 512;
+
+export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
+  terminalPrompt: "U:\\>",
+  suggestionMenuHelpText: null,
+  defaults: { ...DEFAULT_PROJECT_DEFAULTS },
+  ...structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_RADIX_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_INVENTORY_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_WORLD_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_STATE_PROJECT_SETTINGS),
+};
+
+/**
+ * Read old/partial persisted settings without requiring a data migration for
+ * every future optional setting. Core normalizes only core-owned settings and
+ * composes feature-owned setting slices through their feature boundaries.
+ */
+export function normalizeProjectSettings(value: unknown): ProjectSettings {
+  const root = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const suggestionMenuHelpText = typeof root.suggestionMenuHelpText === "string" && root.suggestionMenuHelpText.trim()
+    ? root.suggestionMenuHelpText.trim().slice(0, 1000)
+    : null;
+
+  return {
+    terminalPrompt: typeof root.terminalPrompt === "string" && root.terminalPrompt.trim()
+      ? root.terminalPrompt.slice(0, MAX_TERMINAL_PROMPT_LENGTH)
+      : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
+    suggestionMenuHelpText,
+    defaults: normalizeProjectDefaults(root.defaults),
+    ...normalizeCommandsProjectSettings(root),
+    ...normalizeRadixProjectSettings(root),
+    ...normalizeInventoryProjectSettings(root),
+    ...normalizeWorldProjectSettings(root),
+    ...normalizeStateProjectSettings(root),
+  };
+}
+
+type SnapshotLike = Omit<
+  ProjectSnapshot,
+  "settings" | "nodes" | "interactions" | "stateGroups" | "items" | "bodyBackgrounds" | "startingBodyBackgroundId"
+> & {
+  settings?: unknown;
+  nodes?: unknown;
+  interactions?: unknown;
+  stateGroups?: ProjectSnapshot["stateGroups"];
+  items?: unknown;
+  bodyBackgrounds?: unknown;
+  startingBodyBackgroundId?: unknown;
+};
+
+/**
+ * Accept cached snapshots written before newer project slices existed.
+ * Feature-owned normalizers carry their own one-way compatibility semantics;
+ * this composition root only assembles the normalized canonical snapshot.
+ */
+export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapshot {
+  const normalized = {
+    ...snapshot,
+    ...normalizeNarrativeProjectSlice(snapshot),
+    ...normalizeStateProjectSlice(snapshot),
+    ...normalizeInventoryProjectSlice(snapshot),
+    mediaCompositions: Array.isArray(snapshot.mediaCompositions) ? snapshot.mediaCompositions : [],
+    settings: normalizeProjectSettings(snapshot.settings),
+  } as ProjectSnapshot;
+  return migrateSnapshotReferenceTokens(normalized);
+}
+
+/**
+ * Normalize only historical payloads recovered from the browser mutation queue.
+ * Newly authored operations already use current feature contracts.
+ */
+export function normalizeProjectMutationForReplay(mutation: ProjectMutation): ProjectMutation {
+  return {
+    ...mutation,
+    operations: mutation.operations
+      .map(normalizeNarrativeMutationOperation)
+      .map(normalizeInventoryMutationOperation),
+  };
+}

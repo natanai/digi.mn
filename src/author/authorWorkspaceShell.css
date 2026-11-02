@@ -1,0 +1,475 @@
+/*
+ * Canonical Author workspace layout.
+ *
+ * Feature workspaces are portaled to document.body, outside player-terminal
+ * geometry. The portal owns navigation within Author work (Back); the app shell
+ * owns the global exit back to play (X). Feature modules own neither concern.
+ */
+
+.author-workspace-layer {
+  position: fixed;
+  top: var(--terminal-viewport-top, 0px);
+  right: 0;
+  left: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: .35em;
+  width: 100%;
+  height: var(--terminal-viewport-height, 100dvh);
+  min-height: 0;
+  padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  overflow: hidden;
+  background: #000;
+  color: var(--dos-text);
+  font-family: "PreProgrammed VGA", monospace;
+  font-size: var(--terminal-font-size, 16px);
+  line-height: 1;
+  white-space: normal;
+  cursor: default;
+}
+
+.author-workspace-layer.is-previewing {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.author-workspace-navigation {
+  position: relative;
+  display: grid;
+  gap: .25em;
+  min-height: 2.75em;
+  padding-right: 3.25em;
+}
+
+.author-workspace-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35em .65em;
+  min-width: 0;
+}
+
+.author-workspace-navigation-context {
+  display: grid;
+  gap: .25em;
+  min-width: 0;
+}
+
+.author-workspace-navigation button {
+  min-width: 2.75em;
+  min-height: 2.25em;
+  padding: 0;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.author-workspace-back-compact,
+.author-workspace-stack-toggle,
+.author-workspace-stack-panel {
+  display: none;
+}
+
+.author-workspace-find-slot {
+  min-width: 0;
+}
+
+.author-workspace-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.author-task-surface {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.author-task-surface > .author-panel-frame,
+.author-task-surface > .inventory-surface,
+.author-task-surface > .dialogue-authoring-popover,
+.author-task-surface > .dialogue-authoring-popover > .author-panel-frame {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: 100%;
+  margin: 0;
+}
+
+.author-task-surface > .dialogue-authoring-popover {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.author-task-surface > .author-panel,
+.author-task-surface > .dialogue-authoring-popover > .author-panel {
+  margin: 0;
+}
+
+.author-task-trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .2em .45em;
+  min-width: 0;
+  margin: 0;
+  padding: .2em 0 0;
+  color: var(--dos-muted);
+  font-size: .88em;
+  line-height: 1.15;
+  list-style: none;
+}
+
+.author-task-trail li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.author-task-trail li:not(:last-child)::after {
+  margin-left: .45em;
+  content: "›";
+}
+
+.author-task-trail li[aria-current="page"] {
+  color: var(--dos-bright);
+}
+
+.author-workspace-navigation .author-task-trail button {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.author-workspace-navigation .author-task-trail button:hover,
+.author-workspace-navigation .author-task-trail button:focus-visible {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+
+.author-workspace-navigation .author-task-trail button:disabled {
+  color: var(--dos-muted);
+  cursor: not-allowed;
+  opacity: .55;
+  text-decoration: none;
+}
+
+.author-workspace-stack-heading {
+  color: var(--dos-muted);
+  font-size: .78em;
+  line-height: 1.15;
+}
+
+.author-quick-find {
+  position: static;
+}
+
+.author-quick-find-panel {
+  position: absolute;
+  top: calc(100% + .25em);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: .5em;
+  max-height: min(65dvh, 34em);
+  padding: .65em;
+  overflow-y: auto;
+  border: 1px solid var(--dos-bright);
+  background: #000;
+}
+
+.author-quick-find-panel label {
+  display: grid;
+  gap: .3em;
+  color: var(--dos-muted);
+}
+
+.author-quick-find-panel input {
+  min-width: 0;
+  min-height: 2.75em;
+  border: 1px solid var(--dos-line);
+  border-radius: 0;
+  background: #000;
+  color: var(--dos-bright);
+  font: inherit;
+}
+
+.author-quick-find-panel p,
+.author-quick-find-empty {
+  margin: 0;
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.author-quick-find-results {
+  display: grid;
+  border: 1px solid var(--dos-line);
+}
+
+.author-quick-find-results > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .7em;
+  min-height: 3.4em;
+  padding: .5em .6em;
+  border: 0;
+  border-bottom: 1px dotted var(--dos-line);
+  background: #000;
+  color: var(--dos-text);
+  text-align: left;
+}
+
+.author-quick-find-results > button:last-child {
+  border-bottom: 0;
+}
+
+.author-quick-find-results > button > span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: .15em;
+}
+
+.author-quick-find-results strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.author-quick-find-results small {
+  color: var(--dos-muted);
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+body:has(.author-workspace-layer) .work-surface-close {
+  display: block;
+  z-index: 70;
+}
+
+body:has(.author-workspace-layer.is-previewing) .work-surface-close {
+  display: none;
+}
+
+.author-preview-resume {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 80;
+  min-height: 2.75em;
+  padding: .4em .7em;
+  border: 1px solid var(--dos-bright);
+  border-radius: 0;
+  background: #000;
+  color: var(--dos-bright);
+  font: 16px/1 "PreProgrammed VGA", monospace;
+  cursor: pointer;
+}
+
+.author-leave-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: max(1em, env(safe-area-inset-top)) max(1em, env(safe-area-inset-right)) max(1em, env(safe-area-inset-bottom)) max(1em, env(safe-area-inset-left));
+  background: rgb(0 0 0 / .86);
+}
+
+.author-leave-confirmation {
+  display: grid;
+  gap: .9em;
+  width: min(100%, 34em);
+  padding: 1em;
+  border: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.author-leave-confirmation h2,
+.author-leave-confirmation p {
+  margin: 0;
+  font: inherit;
+}
+
+.author-leave-confirmation h2 {
+  color: var(--dos-bright);
+}
+
+.author-leave-confirmation p {
+  color: var(--dos-muted);
+  line-height: 1.25;
+}
+
+.author-leave-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5em;
+}
+
+.author-leave-actions button {
+  min-height: 2.75em;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.author-panel-body,
+.definition-detail-scroll {
+  scroll-padding-block: .5em max(4.25em, env(safe-area-inset-bottom));
+}
+
+.author-panel-body :is(input, textarea, select):focus,
+.definition-detail-scroll :is(input, textarea, select):focus {
+  scroll-margin-block: .5em 4.5em;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .author-workspace-layer {
+    gap: .2em;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+
+  .author-workspace-navigation {
+    min-height: 2.75em;
+    padding-right: 3em;
+  }
+
+  .author-workspace-navigation button {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+
+  .author-workspace-navigation .author-task-trail button {
+    min-height: 0;
+    font-size: inherit;
+  }
+
+  body:has(.author-workspace-layer) .work-surface-close {
+    min-width: 2.75em;
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+
+  .author-leave-confirmation,
+  .author-leave-actions button {
+    font-size: max(16px, 1em);
+  }
+
+  .author-leave-actions {
+    display: grid;
+  }
+
+  .author-task-surface > .author-panel,
+  .author-task-surface > .dialogue-authoring-popover > .author-panel,
+  .author-task-surface > .inventory-surface {
+    margin: 0;
+    padding: .6em;
+  }
+}
+
+html[data-keyboard-open="true"] .author-workspace-layer {
+  gap: .05em;
+  padding-top: max(2px, env(safe-area-inset-top));
+  padding-bottom: max(2px, env(safe-area-inset-bottom));
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation {
+  min-height: 2.2em;
+  gap: 0;
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation-context,
+html[data-keyboard-open="true"] .author-workspace-tools,
+html[data-keyboard-open="true"] .author-workspace-back-wide {
+  display: none;
+}
+
+html[data-keyboard-open="true"] .author-workspace-primary-actions {
+  flex-wrap: nowrap;
+  gap: .25em .5em;
+  min-height: 2.2em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-back-compact,
+html[data-keyboard-open="true"] .author-workspace-stack-toggle {
+  display: inline;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-toggle {
+  margin-left: auto;
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation button {
+  min-height: 2.2em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation .author-task-trail button {
+  min-height: 0;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-panel {
+  position: absolute;
+  top: calc(100% + .1em);
+  right: 0;
+  left: 0;
+  z-index: 35;
+  display: grid;
+  gap: .45em;
+  max-height: min(58dvh, 24em);
+  padding: .55em;
+  overflow-y: auto;
+  border: 1px solid var(--dos-bright);
+  background: #000;
+  box-shadow: 0 .4em 0 #000;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-panel .author-task-trail {
+  display: grid;
+  gap: .35em;
+  padding-top: .15em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-panel .author-task-trail li:not(:last-child)::after {
+  content: none;
+}
+
+html[data-keyboard-open="true"] .author-quick-find-panel {
+  top: calc(100% + .1em);
+  max-height: calc(var(--terminal-viewport-height, 100dvh) - 3em);
+  gap: .4em;
+  padding: .5em;
+}
+
+html[data-keyboard-open="true"] .author-task-surface > .author-panel,
+html[data-keyboard-open="true"] .author-task-surface > .dialogue-authoring-popover > .author-panel,
+html[data-keyboard-open="true"] .author-task-surface > .inventory-surface {
+  padding: .4em;
+}
+
+html[data-keyboard-open="true"] .author-task-surface > .author-panel-frame > header,
+html[data-keyboard-open="true"] .author-task-surface > .dialogue-authoring-popover > .author-panel-frame > header,
+html[data-keyboard-open="true"] .author-task-surface > .inventory-surface > header {
+  margin: 0 0 .35em;
+  padding-bottom: .25em;
+}
+
+html[data-keyboard-open="true"] .author-panel-body,
+html[data-keyboard-open="true"] .definition-detail-scroll {
+  scroll-padding-block: .35em max(4.5em, env(safe-area-inset-bottom));
+}
+
+html[data-keyboard-open="true"] .author-panel-body :is(input, textarea, select):focus,
+html[data-keyboard-open="true"] .definition-detail-scroll :is(input, textarea, select):focus {
+  scroll-margin-block: .35em 4.75em;
+}

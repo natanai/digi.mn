@@ -1,0 +1,35 @@
+import type { Condition, ComparisonOperator, Value } from "./model";
+import type { PlayState, ProjectSnapshot } from "../project/model";
+import type { RuleScope } from "./runtimeBindings";
+
+export type ConditionContext = {
+  snapshot: ProjectSnapshot;
+  state: PlayState;
+  eventKey?: string;
+  /**
+   * Explicit occurrence for the authored thing currently being selected.
+   * When omitted, attempt conditions retain their event-key-backed behavior.
+   */
+  occurrence?: number;
+  scope?: RuleScope;
+};
+
+export type ConditionHandler = (condition: Condition, context: ConditionContext) => boolean;
+export type ConditionValidator = (condition: Condition) => string[];
+
+export function compareValues(left: Value | undefined, operator: ComparisonOperator, right: Value) {
+  switch (operator) {
+    case "eq":
+      return left === right;
+    case "neq":
+      return left !== right;
+    case "gt":
+      return typeof left === "number" && typeof right === "number" && left > right;
+    case "gte":
+      return typeof left === "number" && typeof right === "number" && left >= right;
+    case "lt":
+      return typeof left === "number" && typeof right === "number" && left < right;
+    case "lte":
+      return typeof left === "number" && typeof right === "number" && left <= right;
+  }
+}

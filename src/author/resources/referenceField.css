@@ -1,0 +1,177 @@
+.author-reference-field {
+  display: grid;
+  gap: .4em;
+  min-width: 0;
+}
+
+.author-reference-control-row {
+  display: flex;
+  align-items: stretch;
+  gap: .45em;
+  min-width: 0;
+}
+
+.author-reference-trigger {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65em;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75em;
+  padding: .45em .6em !important;
+  border: 1px solid var(--dos-line) !important;
+  background: #000 !important;
+  color: var(--dos-text) !important;
+  font: inherit;
+  text-align: left;
+}
+
+.author-reference-trigger[aria-expanded="true"] {
+  border-color: var(--dos-text) !important;
+}
+
+.author-reference-field.is-returned .author-reference-trigger {
+  border-color: var(--dos-bright) !important;
+  box-shadow: inset .2em 0 0 var(--dos-bright);
+}
+
+.author-reference-direct-action {
+  flex: none;
+  min-width: 4.5em;
+  min-height: 2.75em;
+  padding: .35em .25em !important;
+  border: 0 !important;
+  background: #000 !important;
+  color: var(--dos-text) !important;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.author-reference-kind {
+  color: var(--dos-muted);
+  font-size: .82em;
+}
+
+.author-reference-value {
+  min-width: 0;
+  color: var(--dos-bright);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.author-reference-value.is-empty {
+  color: var(--dos-muted);
+}
+
+.author-reference-chevron {
+  color: var(--dos-muted);
+}
+
+.author-reference-chooser {
+  display: grid;
+  gap: .55em;
+  min-width: 0;
+  padding: .65em;
+  border: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.author-reference-chooser > header {
+  color: var(--dos-muted);
+}
+
+.author-reference-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .6em;
+  margin: 0;
+}
+
+.author-reference-search > span {
+  color: var(--dos-muted);
+}
+
+.author-reference-search input {
+  min-width: 0;
+  width: 100%;
+}
+
+.author-reference-options {
+  display: grid;
+  max-height: 14em;
+  overflow-y: auto;
+  border: 1px solid var(--dos-line);
+}
+
+.author-reference-options > button {
+  display: grid;
+  gap: .2em;
+  min-height: 2.75em;
+  padding: .45em .55em !important;
+  border: 0 !important;
+  border-bottom: 1px dotted var(--dos-line) !important;
+  background: #000 !important;
+  color: var(--dos-text) !important;
+  font: inherit;
+  text-align: left;
+}
+
+.author-reference-options > button:last-of-type {
+  border-bottom: 0 !important;
+}
+
+.author-reference-options > button[aria-selected="true"] {
+  color: var(--dos-bright) !important;
+  box-shadow: inset .25em 0 0 var(--dos-text);
+}
+
+.author-reference-options small {
+  color: var(--dos-muted);
+}
+
+.author-reference-no-results {
+  padding: .7em;
+  color: var(--dos-muted);
+}
+
+.author-reference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .75em;
+}
+
+.author-reference-actions button {
+  min-height: 2.5em;
+  padding: .3em .1em !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .author-reference-trigger,
+  .author-reference-direct-action,
+  .author-reference-options > button,
+  .author-reference-actions button {
+    min-height: 3em;
+    font-size: max(16px, 1em);
+  }
+
+  .author-reference-direct-action {
+    min-width: 4.75em;
+  }
+
+  .author-reference-chooser {
+    padding: .55em;
+  }
+
+  .author-reference-options {
+    max-height: min(17em, 42dvh);
+  }
+
+  .author-reference-actions {
+    display: grid;
+  }
+}

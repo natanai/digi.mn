@@ -1,0 +1,159 @@
+.authored-text-editor {
+  display: grid;
+  gap: .4em;
+  min-width: 0;
+}
+
+.authored-text-heading,
+.authored-text-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35em .75em;
+}
+
+.authored-text-heading {
+  justify-content: space-between;
+  min-height: 2em;
+}
+
+.authored-text-heading > span:first-child {
+  color: var(--dos-bright);
+}
+
+.authored-text-speed {
+  display: flex;
+  align-items: center;
+  gap: .3em;
+  color: var(--dos-muted);
+  font-size: .82em;
+}
+
+.authored-text-speed input {
+  width: 3.6em;
+  min-height: 2em;
+  padding: .15em .25em;
+}
+
+.authored-text-field,
+.authored-text-field .value-mention-field {
+  display: grid;
+  min-width: 0;
+}
+
+.authored-text-field textarea {
+  width: 100%;
+  min-height: 5.25em;
+  padding: .6em;
+  line-height: 1.3;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+
+.authored-text-tools {
+  min-height: 2.2em;
+  color: var(--dos-muted);
+  font-size: .88em;
+}
+
+.authored-text-count {
+  margin-right: auto;
+}
+
+.authored-text-tools .text-rules-reference {
+  margin: 0;
+}
+
+.authored-text-preview {
+  min-height: 2.2em;
+  padding: .2em .1em !important;
+}
+
+.narrative-prose-grid {
+  display: grid;
+  gap: .8em;
+  min-width: 0;
+}
+
+.narrative-prose-grid.has-dialogue {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  align-items: start;
+}
+
+.narrative-prose-grid > * {
+  min-width: 0;
+}
+
+.authored-text-errors {
+  display: grid;
+  gap: .2em;
+  padding: .5em;
+  border: 1px solid var(--dos-warn);
+  color: var(--dos-warn);
+}
+
+.inline-command-configs {
+  display: grid;
+  gap: .5em;
+  padding: .65em;
+  border: 1px dotted var(--dos-line);
+}
+
+.inline-command-configs > strong {
+  color: var(--dos-muted);
+  font-weight: 400;
+}
+
+.inline-command-config-row {
+  display: grid;
+  gap: .45em;
+  min-width: 0;
+  padding: .55em 0 0;
+  border-top: 1px solid var(--dos-line);
+}
+
+.inline-command-config-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.inline-command-config-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: .75em;
+}
+
+.inline-command-config-heading > span {
+  display: grid;
+  gap: .15em;
+  min-width: 0;
+}
+
+.inline-command-config-heading small {
+  color: var(--dos-muted);
+  overflow-wrap: anywhere;
+}
+
+.inline-command-config-row .author-reference-field {
+  min-width: 0;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .authored-text-field textarea {
+    min-height: 5em;
+    font-size: max(16px, 1em);
+  }
+
+  .authored-text-heading {
+    align-items: center;
+  }
+
+  .authored-text-tools {
+    gap: .35em .65em;
+  }
+
+  .inline-command-config-heading {
+    align-items: start;
+  }
+}
