@@ -34,6 +34,19 @@ edits. Any edited or imported story is preserved. To try a fully new demo,
 extract a fresh portable folder without copying old data.
 It does not simulate a procedurally generated bounty or Digimon evolution yet.
 
+CHARACTERS IN THE STREET
+The playable street now shows a pixel-art Cleaner and a small red-maned,
+armadillo-like Digimon walking alongside. Both use imported, four-frame
+transparent sprite sheets, not the old colored rectangles. Clicking the
+street moves the Cleaner; the companion follows visually without autonomous
+battle or a formal Sapotama reveal.
+
+You can customize the sprites WITHOUT rebuilding: close the app, then
+replace assets/sprites/cleaner-walk.png (120x52, four 30x52 frames) or
+assets/sprites/partner-walk.png (168x30, four 42x30 frames). Keep
+transparency and horizontal layout. The bundled atlas is the fallback.
+These are prototype designs and can be redrawn later.
+
 CINEMATIC CUTAWAYS
 The engine ships two bundled SVG illustrations as temporary placeholders.
 The Cleaner briefing appears when accepting a bounty; the alley rescue scene
@@ -74,8 +87,9 @@ Only run it if it came from the official natanai/digi.mn GitHub release.
 It does not require a separate Node.js installation or Cloudflare account.
 
 ABOUT THE ART
-The streets and characters are placeholders, not the user's original pixel
-sprites. The Sapotama reveal, animated Digimon partner, encounter cutaways,
-and procedural bounty generator are still planned.
+The streets, story art, and sprite designs are temporary; Cleaner and
+Digimon sprites do now render and animate inside the game. The canonical
+Sapotama reveal, companion gameplay/AI, encounter animation, and procedural
+bounty generator are still planned.
 
 Project: https://github.com/natanai/digi.mn
