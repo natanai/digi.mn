@@ -49,6 +49,20 @@ This must feel like an event in the story, not an out-of-world personality quiz.
 - Keep asset references stable and repository-managed through the existing media feature.
 - Preserve a minimal animation vocabulary: idle, walk, short expressions, and cutaways. Do not require full attack choreography.
 
+## Author mode contract: edit while playing
+
+**Target experience:** digi.mn is an authorable game engine, not a completed graphical game with a separate story editor. In Author mode the running game remains visible and interactive while a docked inspector edits the content or presentation currently under the pointer. The only expected outside-app step is creating or placing source art/audio files in the asset folders. The rest of the game should be configurable without modifying TypeScript, CSS or renderer code.
+
+- **Inspect in place:** select a character, prop, entrance, ground, scene layer, image, cinematic cue or game-facing GUI element to open its authoritative Author resource. Offer direct positioning/size/layer controls where meaningful, with keyboard-accessible alternatives.
+- **Data rather than special cases:** appearance, asset bindings, scene composition, spatial coordinates, clickable regions, animation clip mapping, movement behavior, transitions, camera, map generation parameters and game-facing UI geometry must ultimately be authored project data with a single source of truth. The renderer must only consume it. Avoid accumulating hard-coded digi.mn look-and-feel decisions.
+- **One runtime:** Author and Player modes render the same scene, invoke the same narrative/World/Media/Inventory rules, and read the same saved project. Editing a character's placed interaction must open the existing Narrative interaction workspace, not a second dialogue system.
+- **Immediate visual feedback:** changing a draft should preview the result on the running scene where practical; explicit Save commits through the standard Author persistence boundary, keeping dirty/undo/conflict behavior consistent. The game must not silently treat unsaved drafts as permanent.
+- **Always testable:** ordinary clicks still play while Author inspection is off; an explicit edit/inspect toggle makes world clicks open editing tools instead of triggering events. Changing/editing scenes should not reset the player's location or require restarting the game.
+- **Author UI versus game UI:** Player-facing panels and content (inventory presentation, HUD elements, maps, cinematics) are authorable. The shared engine's own Author navigation, emergency close/save controls and system settings remain stable tool chrome; project themes/layout options may style the player surface without editing the engine tools themselves.
+- **Portable assets:** files may be supplied in `assets/`, but which asset is used, when it appears, its scale/position, animation, state/conditions, and on-screen presentation should be configured through Author mode. Keep stable Media IDs and do not write additional file upload pipelines just to bind art.
+
+**Implemented baseline (November 2026):** the upstream Author system edits Nodes, narrative inputs, consequences, World data, Media, inventory systems and project settings; digi.mn adds street placements and an existing drag-and-drop layout workspace. A first scene-inspection affordance now connects clickable street props directly to their canonical Interaction editors and empty ground to the existing layout editor. Existing prototype buildings, road style, player/partner PNG selection, sprite animation tuning and district map geometry are still coded defaults, **not authorable**. The current project therefore does **not yet** meet this contract. Next work should first make street scene layers and actor/prop sprite bindings into authored data, then expose game panel geometry, presentation and map settings through the same inspector infrastructure.
+
 ## Relationship to pre-programmed
 
 Source of reusable engine concepts: [natanai/pre-programmed](https://github.com/natanai/pre-programmed).
