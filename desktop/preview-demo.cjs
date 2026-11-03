@@ -20,6 +20,12 @@ const SAW_COMPANION=CASE+".injured";
 const KNOWS_ALLEY=any(flag(HEARD_VENDOR),flag(FOUND_CRATE));
 const UNDERSTANDS_SITUATION=all(flag(SPOKE_TO_DIGIMON),flag(SAW_COMPANION));
 const performance={charactersPerSecond:24,cues:[]};
+const CUTAWAY_BRIEFING="digi.mn.cutaway.cleaner-briefing";
+const CUTAWAY_RESCUE="digi.mn.cutaway.alley-rescue";
+const cutaway=(n,assetId)=>({
+  id:id(2000+n),type:"sprite",start:1,end:2,value:assetId,
+});
+
 const opening=(n,text)=>({
   id:id(100+n),order:0,condition:always,narrationText:text,dialogueText:"",
   narrationPerformance:performance,dialoguePerformance:performance,after:[],
@@ -33,7 +39,12 @@ const node=(n,name,description)=>({
 const outcome=(n,text,to,condition=always,effects=[])=>({
   id:id(500+n),order:0,label:"default",authorStatus:"configured",
   condition,responseText:text,dialogueText:"",speakerId:null,
-  responsePerformance:performance,dialoguePerformance:performance,
+  // Use the engine's existing authored Media text cue, not a digi.mn-only
+  // cinematic controller. These IDs also resolve when the SVG placeholders
+  // are replaced by higher-resolution artwork in portable assets/.
+  responsePerformance:n===1?{...performance,cues:[cutaway(n,CUTAWAY_BRIEFING)]}
+    :n===8?{...performance,cues:[cutaway(n,CUTAWAY_RESCUE)]}:performance,
+  dialoguePerformance:performance,
   effects, after:to?[{id:id(900+n),type:"transition",destination:{nodeId:to.id,openingId:null}}]:[],
 });
 const input=(n,from,label,kind,x,to,text,{when=always,outcomeWhen=when,effects=[],alternates=[]}={})=>({
