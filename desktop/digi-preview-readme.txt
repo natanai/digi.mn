@@ -34,10 +34,21 @@ YOUR FILES
 - assets: art and audio files for the authored game.
 - installation.txt: your local Author key and initial start-button wording.
 
-For a new preview, export a .ppgame backup from Author mode. Extract the newer
-ZIP into a separate folder, then move the old _engine/data, assets, and
-installation.txt into the new folder. Do not overwrite your save data with an
-empty copy. The preview updater may not offer prerelease-to-prerelease upgrades.
+UPDATING THIS PREVIEW
+The Settings > CHECK FOR UPDATES button now supports newer digi.mn preview
+releases, as well as the eventual stable release. It downloads the official
+Windows ZIP, verifies its SHA-256 digest, preserves _engine/data and your
+installation.txt and assets, and relaunches the app after replacing the runtime.
+
+If you installed v0.1.0-preview.4 or earlier, its updater cannot see GitHub
+prereleases. Download this newer ZIP manually once. Future preview releases can
+be installed through Settings after that.
+
+Before ANY update, save open Author edits and export a .ppgame backup.
+For manual updates, extract the new ZIP into a DIFFERENT folder while the
+old app is closed. Copy the old _engine/data, assets, and installation.txt
+into the new folder, keeping a backup of the old folder until tested.
+Never replace only the EXE or remove the old data folder.
 
 SAFETY
 This is an unsigned, early Windows build. Windows SmartScreen may warn.
