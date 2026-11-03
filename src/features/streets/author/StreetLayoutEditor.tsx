@@ -5,12 +5,13 @@ import "./streetLayout.css";
 
 /** This is the spatial editor for Narrative-owned placements, not a second Interaction editor. */
 export function StreetLayoutEditor({
-  draft, setDraft, interactions, onEdit, dirty,
+  draft, setDraft, interactions, onEdit, onCreate, dirty,
 }: {
   draft: LayoutDraft;
   setDraft: Dispatch<SetStateAction<LayoutDraft>>;
   interactions: readonly Interaction[];
   onEdit: (id: string) => void;
+  onCreate: () => void;
   dirty: boolean;
 }) {
   const activeDrag = useRef<{ id: string; pointerId: number } | null>(null);
@@ -83,6 +84,9 @@ export function StreetLayoutEditor({
       </svg>
     </div>
     <div className="digi-layout-list">
+      <button type="button" className="digi-layout-create" disabled={dirty}
+        title={dirty ? "Save this layout before opening a new interaction." : "Create a Narrative interaction for this street"}
+        onClick={onCreate}>[+ NEW STREET INTERACTION]</button>
       {placed.map((item) => {
         const placement = draft.placements[item.id]!;
         return <div className="digi-layout-row" key={item.id}>
