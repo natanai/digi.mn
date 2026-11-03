@@ -10,11 +10,12 @@ import "./street.css";
 
 const spawn = (): StreetPosition => ({ x: 56, y: 114 });
 
-export function StreetView({ seed, choices, onChoose, canChoose, district, currentNodeId, visitedNodeIds }: {
+export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, district, currentNodeId, visitedNodeIds }: {
   seed: string;
   choices: readonly StreetChoice[];
   onChoose: (text: string) => void;
   canChoose: boolean;
+  onPreviewArt?: () => void;
   district: DistrictLayout;
   currentNodeId: string;
   visitedNodeIds: readonly string[];
@@ -178,6 +179,9 @@ export function StreetView({ seed, choices, onChoose, canChoose, district, curre
     <div className="digi-street-bar" onPointerDown={(event) => event.stopPropagation()}>
       <strong>STREET</strong>
       <span>CLICK TO WALK · CLICK TO INTERACT</span>
+      {onPreviewArt && !mapOpen ? <button type="button"
+        title="Preview the game's authored cinematic art. In the story, the scenes play when accepting a bounty or resolving it peacefully."
+        onClick={(event) => { event.stopPropagation(); stopWalking(); onPreviewArt(); }}>[VIEW CUTAWAY]</button> : null}
       <button type="button" aria-pressed={mapOpen} onClick={() => {
         stopWalking();
         setMapOpen((open) => !open);
