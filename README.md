@@ -2,6 +2,16 @@
 
 A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* universe. Play as a Cleaner, explore urban districts, and resolve stories through investigation, conversation, or confrontation. Digimon in the game will be original designs by the author.
 
+## Windows preview
+
+**[Download digi.mn v0.1.0-preview.1 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.1)**
+
+The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
+
+The initial Author key is `local` in `installation.txt`; change it if desired. Your game data remains within `_engine/data`, and the downloadable archive does not contain saved player data. Later previews should be extracted separately; copy `_engine/data`, `assets`, and `installation.txt` over only after making a backup. Read `_engine/README.txt` in the package for the full instructions.
+
+**Preview scope:** This tests the engine, Author editing, spatial interaction, and a handwritten sample case. It does *not* yet include random bounty composition, your original Digimon pixel art, the Sapotama partner reveal, or the final combat/cutaway presentation.
+
 ## Development status
 
 **Engine import completed.** digi.mn contains an independent snapshot of [pre-programmed](https://github.com/natanai/pre-programmed), including its real narrative, world-state, persistence, media, and Author systems. The origin commit is recorded in [docs/source-snapshot.txt](docs/source-snapshot.txt).
