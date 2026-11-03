@@ -26,6 +26,12 @@ export const streetLayoutWorkspace = defineAuthorWorkspace<LayoutDraft>({
           dirty={dirty}
           interactions={context.snapshot.interactions}
           onEdit={(id) => context.resources.edit("interaction", id)}
+          onCreate={() => context.pushTask({
+            type: "feature",
+            feature: "narrative",
+            workspace: "interaction",
+            data: { sourceNodeId: draft.nodeId },
+          })}
         />,
       }],
     };
