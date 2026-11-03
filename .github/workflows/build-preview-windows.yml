@@ -1,0 +1,309 @@
+name: Build digi.mn Windows preview ZIP
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Portable engine version (for example 0.1.0)
+        required: true
+        type: string
+  # Updating this small version marker builds the same verified release from main.
+  # It also permits producing a new ZIP when manual workflow dispatch is unavailable.
+  push:
+    branches: [main]
+    paths:
+      - .github/preview-release.version
+
+permissions:
+  contents: write
+
+jobs:
+  build-portable-windows:
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve portable version
+        id: version
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            "${{ inputs.version }}".Trim()
+          } else {
+            (Get-Content ".github/preview-release.version" -Raw).Trim()
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+            throw "Version must be semver-like, such as 0.1.0 or 0.1.0-beta.1"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Verify release source
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -ne "refs/heads/main") {
+            throw "Versioned portable releases must be built from main."
+          }
+
+      - name: Install engine dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify engine before packaging
+        run: npm run verify
+
+      - name: Verify canonical no-cloud runtime
+        run: npm run verify:local
+
+      - name: Remove installation Media from portable build workspace
+        shell: pwsh
+        run: |
+          if (Test-Path public/assets) { Remove-Item public/assets -Recurse -Force }
+          New-Item -ItemType Directory -Path public/assets -Force | Out-Null
+
+      - name: Build clean engine client
+        run: npm run build
+        env:
+          VITE_API_ORIGIN: ""
+
+      - name: Install isolated desktop host dependencies
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify .ppgame drop arguments
+        run: node --test desktop/project-drop.nodecheck.cjs
+
+      - name: Verify sample Cleaner mission and nonviolent resolution
+        run: node --test desktop/preview-demo.nodecheck.cjs
+
+      - name: Verify updater metadata and Windows script
+        shell: pwsh
+        run: |
+          node --test desktop/updater.nodecheck.cjs
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path "desktop/apply-update.ps1"), [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { $parseErrors | ForEach-Object { Write-Error $_.Message }; throw "Update script has invalid PowerShell syntax." }
+          $root = Join-Path $env:RUNNER_TEMP "digi.mn Update Test"
+          New-Item -ItemType Directory -Path (Join-Path $root "_engine/data"), (Join-Path $root "_engine.next") -Force | Out-Null
+          Set-Content (Join-Path $root "_engine/digi.mn.exe") "old"
+          Set-Content (Join-Path $root "_engine.next/digi.mn.exe") "new"
+          Set-Content (Join-Path $root "_engine/data/game.txt") "saved game"
+          $temp = Join-Path $env:RUNNER_TEMP "digi.mn Update Scratch"
+          New-Item -ItemType Directory -Path $temp -Force | Out-Null
+          & "desktop/apply-update.ps1" -Root $root -OldPid 2147483647 -TempRoot $temp -SkipRestart
+          if ($LASTEXITCODE -ne 0) { throw "Updater dry-run failed." }
+          if ((Get-Content (Join-Path $root "_engine/digi.mn.exe") -Raw).Trim() -ne "new") { throw "Runtime was not replaced." }
+          if ((Get-Content (Join-Path $root "_engine/data/game.txt") -Raw).Trim() -ne "saved game") { throw "Saved game data was lost." }
+          if (Test-Path (Join-Path $root "_engine.previous")) { throw "Updater left stale previous runtime." }
+          Remove-Item $root -Recurse -Force
+
+      - name: Bundle Worker through Wrangler
+        shell: pwsh
+        run: |
+          $wranglerBundle = "desktop/build/wrangler"
+          New-Item -ItemType Directory -Path $wranglerBundle -Force | Out-Null
+          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outdir $wranglerBundle
+          $javascript = @(Get-ChildItem $wranglerBundle -Recurse -File | Where-Object { $_.Extension -in @('.js', '.mjs') })
+          if ($javascript.Count -ne 1) {
+            $javascript | ForEach-Object { Write-Host $_.FullName }
+            throw "Expected Wrangler dry-run to produce exactly one bundled Worker JavaScript module; found $($javascript.Count)."
+          }
+          Copy-Item $javascript[0].FullName "desktop/build/worker.mjs" -Force
+          if (-not (Test-Path desktop/build/worker.mjs)) { throw "Wrangler did not produce the portable Worker bundle." }
+
+      - name: Build pre-extracted Windows runtime
+        working-directory: desktop
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npx electron-builder --config electron-builder.yml --win --x64 --dir --publish never "--config.extraMetadata.version=$env:VERSION"
+
+      - name: Stage contained portable folder
+        id: stage
+        shell: pwsh
+        run: |
+          $stageRoot = Join-Path $env:RUNNER_TEMP "digi-mn-portable-folder"
+          $appRoot = Join-Path $stageRoot "digi.mn"
+          $engineRoot = Join-Path $appRoot "_engine"
+          if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $engineRoot -Force | Out-Null
+
+          Copy-Item "desktop/release/win-unpacked/*" $engineRoot -Recurse -Force
+          Copy-Item "desktop/digi-preview-readme.txt" (Join-Path $engineRoot "README.txt")
+          Copy-Item "desktop/installation-template.txt" (Join-Path $appRoot "installation.txt")
+          New-Item -ItemType Directory -Path (Join-Path $appRoot "assets") -Force | Out-Null
+
+          if (-not (Test-Path (Join-Path $engineRoot "digi.mn.exe"))) {
+            throw "Contained Electron runtime did not contain its executable."
+          }
+          if (-not (Test-Path (Join-Path $engineRoot "resources/apply-update.ps1"))) { throw "Runtime did not package the Windows update helper." }
+          "stage_root=$stageRoot" >> $env:GITHUB_OUTPUT
+          "app_root=$appRoot" >> $env:GITHUB_OUTPUT
+          "engine_root=$engineRoot" >> $env:GITHUB_OUTPUT
+
+      - name: Smoke-test contained runtime and .ppgame loading
+        shell: pwsh
+        env:
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+          ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
+        run: |
+          $executable = Join-Path $env:ENGINE_ROOT "digi.mn.exe"
+          $installation = Join-Path $env:APP_ROOT "installation.txt"
+          $config = Get-Content $installation -Raw
+          $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=folder-self-test-key'
+          $config = $config -replace '(?m)^START_BUTTON_TEXT=.*$', 'START_BUTTON_TEXT=FRIEND TEST'
+          Set-Content -Path $installation -Value $config -Encoding UTF8 -NoNewline
+
+          $stdout = Join-Path $env:APP_ROOT "self-test-stdout.txt"
+          $stderr = Join-Path $env:APP_ROOT "self-test-stderr.txt"
+          $process = Start-Process -FilePath $executable -ArgumentList "--self-test" -WorkingDirectory $env:ENGINE_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($process.ExitCode -ne 0) {
+            Get-ChildItem $env:APP_ROOT -Recurse -Force | ForEach-Object { Write-Host $_.FullName }
+            throw "Contained portable runtime self-test failed with exit code $($process.ExitCode)."
+          }
+
+          if (-not (Test-Path (Join-Path $env:ENGINE_ROOT "data"))) {
+            throw "Portable runtime did not keep generated state beneath _engine."
+          }
+          if (Test-Path (Join-Path $env:APP_ROOT "data")) {
+            throw "Portable runtime recreated legacy root data."
+          }
+          if (Test-Path (Join-Path $env:APP_ROOT "exports")) {
+            throw "Portable runtime recreated a root exports folder."
+          }
+
+          Copy-Item "desktop/installation-template.txt" $installation -Force
+          Remove-Item $stdout, $stderr -Force -ErrorAction SilentlyContinue
+          $containedData = Join-Path $env:ENGINE_ROOT "data"
+          if (Test-Path $containedData) { Remove-Item $containedData -Recurse -Force }
+          $wranglerState = Join-Path $env:APP_ROOT ".wrangler"
+          if (Test-Path $wranglerState) { Remove-Item $wranglerState -Recurse -Force }
+
+      - name: Verify friend-facing contained folder
+        shell: pwsh
+        env:
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+          ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
+        run: |
+          foreach ($required in @("installation.txt", "assets", "_engine")) {
+            if (-not (Test-Path (Join-Path $env:APP_ROOT $required))) {
+              throw "Portable folder is missing required entry: $required"
+            }
+          }
+          foreach ($requiredInternal in @("digi.mn.exe", "README.txt", "resources")) {
+            if (-not (Test-Path (Join-Path $env:ENGINE_ROOT $requiredInternal))) {
+              throw "Portable _engine folder is missing required entry: $requiredInternal"
+            }
+          }
+
+          $rootEntries = @(Get-ChildItem $env:APP_ROOT -Force | ForEach-Object Name | Sort-Object)
+          $expectedRoot = @("_engine", "assets", "installation.txt") | Sort-Object
+          if (($rootEntries -join "`n") -ne ($expectedRoot -join "`n")) {
+            Write-Host "Unexpected portable root entries:"
+            $rootEntries | ForEach-Object { Write-Host $_ }
+            throw "Portable root must expose only installation.txt, assets, and _engine."
+          }
+
+          $installationLines = @(Get-Content (Join-Path $env:APP_ROOT "installation.txt"))
+          if ($installationLines.Count -ne 2 -or $installationLines[0] -ne "AUTHOR_KEY=local" -or $installationLines[1] -ne "START_BUTTON_TEXT=INITIALIZE UNIVERSE") {
+            throw "Portable installation.txt must contain exactly the two friend-facing settings."
+          }
+
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "assets") -Force).Count -ne 0) {
+            throw "Portable assets folder must be empty before distribution."
+          }
+          if (Test-Path (Join-Path $env:ENGINE_ROOT "data")) {
+            throw "Portable internal data must be clean before distribution."
+          }
+
+          foreach ($forbidden in @("docs", "src", "tests", "worker", "scripts", ".github", "AGENTS.md", "FOUNDATION.md", "DOS-VISUAL-TARGET.md", "CODEX-HANDOFF.md")) {
+            if (Test-Path (Join-Path $env:APP_ROOT $forbidden)) {
+              throw "Developer/agent material leaked into portable folder: $forbidden"
+            }
+          }
+
+      - name: Assemble contained-folder ZIP
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          STAGE_ROOT: ${{ steps.stage.outputs.stage_root }}
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+        run: |
+          $zip = Join-Path $PWD "digi.mn-v$env:VERSION-windows-x64.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::Open($zip, [System.IO.Compression.ZipArchiveMode]::Create)
+          try {
+            [void]$archive.CreateEntry("digi.mn/assets/")
+            Get-ChildItem $env:APP_ROOT -Recurse -File | ForEach-Object {
+              $relative = [System.IO.Path]::GetRelativePath($env:STAGE_ROOT, $_.FullName).Replace('\', '/')
+              [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive,
+                $_.FullName,
+                $relative,
+                [System.IO.Compression.CompressionLevel]::Optimal
+              ) | Out-Null
+            }
+          } finally {
+            $archive.Dispose()
+          }
+
+          if (-not (Test-Path $zip)) { throw "Portable ZIP was not created." }
+          $reader = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            $entries = @($reader.Entries | ForEach-Object FullName)
+          } finally {
+            $reader.Dispose()
+          }
+          foreach ($required in @(
+            "digi.mn/installation.txt",
+            "digi.mn/assets/",
+            "digi.mn/_engine/digi.mn.exe",
+            "digi.mn/_engine/README.txt"
+          )) {
+            if ($entries -notcontains $required) { throw "Portable ZIP is missing required entry: $required" }
+          }
+          if ($entries -contains "digi.mn/digi.mn.exe") { throw "Redundant root executable was packed." }
+          if ($entries -contains "digi.mn/data/" -or $entries -contains "digi.mn/exports/") {
+            throw "Legacy root state folders leaked into portable ZIP."
+          }
+          if ($entries | Where-Object { $_ -match '(^|/)(AGENTS\.md|FOUNDATION\.md|DOS-VISUAL-TARGET\.md|CODEX-HANDOFF\.md)$' }) {
+            throw "Agent-facing documentation leaked into portable ZIP."
+          }
+          if ($entries | Where-Object { $_ -match '\.zip$' }) {
+            throw "Nested ZIP detected inside portable distribution."
+          }
+
+          "ZIP_PATH=$zip" >> $env:GITHUB_ENV
+
+      - name: Publish GitHub preview release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $tag = "v$env:VERSION"
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($existingTag) {
+            throw "Release tag $tag already exists. Choose a new version so published builds stay immutable."
+          }
+
+          $arguments = @(
+            "release", "create", $tag, $env:ZIP_PATH,
+            "--repo", $env:GITHUB_REPOSITORY,
+            "--target", $env:GITHUB_SHA,
+            "--title", "digi.mn $tag",
+            "--generate-notes",
+            "--prerelease"
+          )
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) { throw "GitHub Release publication failed." }
