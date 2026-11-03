@@ -12,7 +12,7 @@ export function streetCamera(sceneWidth: number, playerX: number) {
 /** Return logical canvas coordinates only for pointer hits on the rendered canvas. */
 export function canvasStreetPoint(
   clientX: number, clientY: number,
-  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  rect: { left: number; top: number; width: number; height: number },
 ): StreetPosition | null {
   if (rect.width <= 0 || rect.height <= 0) return null;
   const x = (clientX - rect.left) / rect.width * VIEW_WIDTH;
