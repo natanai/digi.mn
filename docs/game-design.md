@@ -66,6 +66,10 @@ Do **not** create a second parallel dialogue system, separate combat narrative e
 
 Pre-programmed's current Windows packaging, generic terminal-focused player shell, and historical audits should be evaluated before copying wholesale; do not treat unrelated infrastructure as a mandatory product requirement.
 
+## Current authored demo invariant
+
+The Windows first-run Cleaner scenario uses ordinary Narrative outcomes and State flags for investigation and case resolution. It demonstrates a locked-but-visible entrance, two possible clues for reaching the alley, a nonviolent conclusion unlocked through listening and observation, a separate paid conclusion, and returning home without a conventional quest log. This remains **fixed authored example content**, not procedural bounty composition. Existing authored projects are never silently replaced.
+
 ## Implemented spatial foundation (November 2026)
 
 The initial street renderer is now connected to authored interactions. One interaction can optionally contain a street placement (kind, X, depth, optional World identity). Its conditions, response, and AFTER transition remain exclusively owned by Narrative.
