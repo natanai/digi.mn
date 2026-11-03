@@ -185,15 +185,18 @@ async function verifyDigiLayout(url, preload) {
 
     // Inventory is a *player workspace inside the game viewport*, not a
     // full-desktop takeover. Drive the real editable default "inv" command.
-    await until(wc, 'Boolean(document.querySelector(".terminal-command-textarea"))', "inventory input");
-    await wc.executeJavaScript(`(() => {
-      const input = document.querySelector(".terminal-command-textarea");
-      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value").set;
-      nativeSetter.call(input, "inv");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    })()`);
-    await until(wc, 'document.querySelector(".terminal-command-textarea")?.value === "inv"', "typed inventory command");
-    await pause(100);
+    // The newly entered street also has timed narration. Finish that before
+    // issuing a player command, just as a real player would.
+    await until(wc, `(() => {
+      const ready = document.querySelector(".terminal-command-choice");
+      if (ready) return true;
+      document.querySelector(".terminal-history")?.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles:true, cancelable:true }));
+      return false;
+    })()`, "new street choices after narration", 15000);
+    await wc.executeJavaScript('document.querySelector(".terminal-command-textarea").focus()');
+    await wc.insertText("inv");
+    await until(wc, 'document.querySelector(".terminal-command-textarea")?.value === "inv"', "real typed inventory input");
     await wc.executeJavaScript('document.querySelector(".terminal-command-submit").click()');
     await until(wc, 'Boolean(document.querySelector(".player-workspace-layer.digi-viewport-workspace"))', "game-viewport inventory");
     const inventoryBounds = await wc.executeJavaScript(`(() => {
