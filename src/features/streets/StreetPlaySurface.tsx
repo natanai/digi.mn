@@ -16,11 +16,13 @@ export function StreetPlaySurface({
   playState,
   currentNodeId,
   onChoose,
+  canChoose,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
   currentNodeId: string;
   onChoose: (text: string) => void;
+  canChoose: boolean;
 }) {
   const seed = String(playState.initializationSeed);
   const district = useMemo(
@@ -53,6 +55,7 @@ export function StreetPlaySurface({
   return <StreetView
     seed={seed + ":" + physicalLocation}
     choices={choices}
+    canChoose={canChoose}
     district={district}
     currentNodeId={currentNodeId}
     visitedNodeIds={playState.traversal}
