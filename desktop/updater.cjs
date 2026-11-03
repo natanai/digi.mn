@@ -7,9 +7,9 @@ const { spawn } = require("node:child_process");
 const { Readable } = require("node:stream");
 const { pipeline } = require("node:stream/promises");
 
-const RELEASE_API = "https://api.github.com/repos/natanai/pre-programmed/releases/latest";
+const RELEASE_API = "https://api.github.com/repos/natanai/digi.mn/releases/latest";
 const ASSET_LIMIT = 600 * 1024 * 1024;
-const USER_AGENT = "Pre-Programmed-Windows-Portability";
+const USER_AGENT = "digi.mn-Windows-Portability";
 function semverParts(value) {
   const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(value ?? "");
   return match ? match.slice(1).map(Number) : null;
@@ -26,7 +26,7 @@ function isNewerVersion(candidate, installed) {
 function selectRelease(release, currentVersion) {
   if (!release || release.draft || release.prerelease || !isNewerVersion(release.tag_name, currentVersion)) return null;
   const version = release.tag_name.slice(1);
-  const name = "Pre-Programmed-v" + version + "-windows-x64.zip";
+  const name = "digi.mn-v" + version + "-windows-x64.zip";
   const asset = release.assets?.find((item) => item.name === name);
   if (!asset || !Number.isSafeInteger(asset.size) || asset.size < 1 || asset.size > ASSET_LIMIT) {
     throw new Error("The new release does not include a compatible Windows ZIP.");
@@ -34,7 +34,7 @@ function selectRelease(release, currentVersion) {
   if (!/^sha256:[a-f0-9]{64}$/i.test(asset.digest ?? "")) {
     throw new Error("The new release has no verifiable SHA-256 digest.");
   }
-  const expectedUrl = "https://github.com/natanai/pre-programmed/releases/download/v" + version + "/" + name;
+  const expectedUrl = "https://github.com/natanai/digi.mn/releases/download/v" + version + "/" + name;
   if (asset.browser_download_url !== expectedUrl) {
     throw new Error("The Windows asset did not come from the official GitHub release.");
   }
@@ -79,7 +79,7 @@ async function downloadZip(asset, destination, progress) {
 }
 async function stageUpdate({ release, root, scriptSource, onProgress }) {
   const next = path.join(root, "_engine.next");
-  const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), "pre-programmed-update-"));
+  const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), "digi-mn-update-"));
   try {
     if (fs.existsSync(next) || fs.existsSync(path.join(root, "_engine.previous"))) {
       throw new Error("An earlier update is incomplete. Inspect _engine.next or _engine.previous before updating.");
@@ -89,11 +89,11 @@ async function stageUpdate({ release, root, scriptSource, onProgress }) {
     const expanded = path.join(tmp, "unpacked");
     const psLiteral = (value) => "\'" + value.replace(/\'/g, "\'\'") + "\'";
     await powershell(["-Command", "Expand-Archive -LiteralPath " + psLiteral(zip) + " -DestinationPath " + psLiteral(expanded) + " -Force"]);
-    const stageRoot = path.join(expanded, "Pre-Programmed");
+    const stageRoot = path.join(expanded, "digi.mn");
     const engine = path.join(stageRoot, "_engine");
     for (const required of [
       path.join(stageRoot, "installation.txt"),
-      path.join(engine, "Pre-Programmed.exe"),
+      path.join(engine, "digi.mn.exe"),
       path.join(engine, "resources"),
     ]) {
       if (!fs.existsSync(required)) throw new Error("The new ZIP has an unexpected installation layout.");
