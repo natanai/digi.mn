@@ -66,14 +66,20 @@ jobs:
           # The repository also contains legacy pre-programmed example sprites.
           # They are NOT digi.mn game art and must not leak into Windows releases.
           Get-ChildItem public/assets -Directory |
-            Where-Object { $_.Name -ne "cutaways" } |
+            Where-Object { $_.Name -notin @("cutaways", "sprites") } |
             Remove-Item -Recurse -Force
-          # These four tracked files are intentional, replaceable game examples.
+          # The inherited pre-programmed demo art is unrelated to this game.
+          # Preserve only the two authored walk-cycle atlases.
+          Get-ChildItem public/assets/sprites -File |
+            Where-Object { $_.Name -notin @("cleaner-walk.png", "partner-walk.png") } |
+            Remove-Item -Force
           $expected = @(
             "cutaways/alley-rescue.svg",
             "cutaways/alley-rescue.svg.asset.json",
             "cutaways/cleaner-briefing.svg",
-            "cutaways/cleaner-briefing.svg.asset.json"
+            "cutaways/cleaner-briefing.svg.asset.json",
+            "sprites/cleaner-walk.png",
+            "sprites/partner-walk.png"
           ) | Sort-Object
           $actual = @(Get-ChildItem public/assets -Recurse -File |
             ForEach-Object { [System.IO.Path]::GetRelativePath((Resolve-Path public/assets).Path, $_.FullName).Replace([char]92,'/') } |
