@@ -95,10 +95,10 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
   return <section className={`digi-street${mapOpen ? " digi-street-map-open" : ""}`} aria-label="Side-on town prototype">
     <div className="digi-street-bar" onPointerDown={(event)=>event.stopPropagation()}>
       <strong>STREET</strong>
-      <span>WASD / ARROWS · E INTERACT</span>
+      <span>FOCUS STREET · WASD / ARROWS · E</span>
       <button type="button" aria-pressed={mapOpen} onClick={() => { pressed.current.clear(); setMapOpen((current)=>!current); }}>{mapOpen?"BACK TO STREET":"DISTRICT MAP"}</button>
     </div>
-    <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls" onBlur={() => pressed.current.clear()} onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
+    <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls. Focus the street to walk with arrows or WASD." aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown W A S D E" onBlur={() => pressed.current.clear()} onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
         style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale }}
         aria-label="Pixel-art town, controlled with arrows or WASD" role="img" />
@@ -106,7 +106,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     {mapOpen ? <DistrictMap district={district} currentNodeId={currentNodeId} visitedNodeIds={visitedNodeIds} /> : null}
     <div className="digi-street-caption" onPointerDown={(event) => event.stopPropagation()}>
       {mapOpen ? <span>Map is informational. Enter buildings using the street interaction.</span> : nearbyLabel ? <button type="button" onClick={() => nearbyRef.current && chooseRef.current(nearbyRef.current.input)}>[E] {nearbyLabel}</button>
-        : <span>{scene.objects.length ? "Walk toward a person, object, or entrance to interact." : "Author a street placement on a node interaction to populate this scene."}</span>}
+        : <span>{scene.objects.length ? "Click the street to move, then approach a person, object, or entrance." : "Author a street placement on a node interaction to populate this scene."}</span>}
     </div>
   </section>;
 }
