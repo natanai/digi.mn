@@ -10,12 +10,14 @@ import "./street.css";
 
 const spawn = (): StreetPosition => ({ x: 56, y: 114 });
 
-export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, district, currentNodeId, visitedNodeIds }: {
+export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, onEditStreetTarget, onArrangeStreet, district, currentNodeId, visitedNodeIds }: {
   seed: string;
   choices: readonly StreetChoice[];
   onChoose: (text: string) => void;
   canChoose: boolean;
   onPreviewArt?: () => void;
+  onEditStreetTarget?: (id: string) => void;
+  onArrangeStreet?: () => void;
   district: DistrictLayout;
   currentNodeId: string;
   visitedNodeIds: readonly string[];
@@ -36,6 +38,10 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
   const [hoverTarget, setHoverTarget] = useState(false);
   const [scale, setScale] = useState(1);
   const [mapOpen, setMapOpen] = useState(false);
+  // Author mode remains playable by default. Inspection is an explicit mode
+  // so the same click never both runs a story action and opens its editor.
+  const [editScene, setEditScene] = useState(false);
+  const editing = Boolean(onEditStreetTarget && onArrangeStreet && editScene);
   const mapOpenRef = useRef(false);
   mapOpenRef.current = mapOpen;
 
@@ -134,13 +140,13 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
       const context = canvas.current?.getContext("2d");
       if (context) renderStreet(
         context, scene, position.current, now, moving, destination.current?.position ?? null,
-        actorArt.current, companion.current, facing.current, companionMoving,
+        actorArt.current, companion.current, facing.current, companionMoving, editing,
       );
       frameId = requestAnimationFrame(tick);
     };
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
-  }, [scene, canChoose]);
+  }, [scene, canChoose, editing]);
 
   const canvasPoint = (event: PointerEvent<HTMLCanvasElement>): StreetPosition | null =>
     canvasStreetPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect());
@@ -150,6 +156,15 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
     if (mapOpenRef.current || event.button !== 0) return;
     const point = canvasPoint(event);
     if (!point) return;
+    if (editing) {
+      // The edited item is the same existing Interaction used by gameplay.
+      // A click on empty scenery opens the existing spatial layout workspace.
+      const object = hitStreetObject(point, scene, streetCamera(scene.width, position.current.x));
+      destination.current = null;
+      if (object) onEditStreetTarget?.(object.id);
+      else onArrangeStreet?.();
+      return;
+    }
     const target = resolveStreetPointer(point, scene, position.current);
     if (!target) return;
     destination.current = target; // a second click replaces any in-progress walk
@@ -159,13 +174,15 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
   };
 
   const hoverScene = (event: PointerEvent<HTMLCanvasElement>) => {
-    if (mapOpenRef.current || destination.current) return;
+    if (mapOpenRef.current || (!editing && destination.current)) return;
     const point = canvasPoint(event);
     if (!point) return;
     const target = hitStreetObject(point, scene, streetCamera(scene.width, position.current.x));
     setHoverTarget(Boolean(target));
     setHint((previous) => {
-      const label = target ? `Click to interact: ${target.label}` : "";
+      const label = editing
+        ? target ? `Edit: ${target.label}` : "Click background to arrange this street"
+        : target ? `Click to interact: ${target.label}` : "";
       return previous === label ? previous : label;
     });
   };
@@ -178,7 +195,15 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
   return <section className={`digi-street${mapOpen ? " digi-street-map-open" : ""}`} aria-label="Point-and-click town">
     <div className="digi-street-bar" onPointerDown={(event) => event.stopPropagation()}>
       <strong>STREET</strong>
-      <span>CLICK TO WALK · CLICK TO INTERACT</span>
+      <span>{editing ? "CLICK TARGET TO EDIT · BACKGROUND TO ARRANGE" : "CLICK TO WALK · CLICK TO INTERACT"}</span>
+      {onEditStreetTarget && onArrangeStreet && !mapOpen ? <button type="button"
+        aria-pressed={editing}
+        title={editing ? "Return to playing the street" : "Inspect and edit street interactions without executing them"}
+        onClick={(event) => {
+          event.stopPropagation();
+          stopWalking();
+          setEditScene((value) => !value);
+        }}>{editing ? "[PLAY SCENE]" : "[EDIT SCENE]"}</button> : null}
       {onPreviewArt && !mapOpen ? <button type="button"
         title="Preview the game's authored cinematic art. In the story, the scenes play when accepting a bounty or resolving it peacefully."
         onClick={(event) => { event.stopPropagation(); stopWalking(); onPreviewArt(); }}>[VIEW CUTAWAY]</button> : null}
@@ -187,7 +212,7 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
         setMapOpen((open) => !open);
       }}>{mapOpen ? "BACK TO STREET" : "DISTRICT MAP"}</button>
     </div>
-    <div ref={frame} className="digi-street-frame" role="group"
+    <div ref={frame} className={`digi-street-frame${editing ? " digi-street-editing" : ""}`} role="group"
       aria-label="Point-and-click town scene. Click ground to walk or a character, object, or door to approach and interact. The terminal offers the same interactions.">
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
         style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale, cursor: hoverTarget ? "pointer" : "crosshair" }}
@@ -202,9 +227,11 @@ export function StreetView({ seed, choices, onChoose, canChoose, onPreviewArt, d
           <span>{hint || "Walking"}</span>
           <button type="button" onClick={stopWalking}>CANCEL</button>
         </>
-        : <span>{hint || (scene.objects.length
-          ? "Click the ground to walk, or click a person, object, or entrance to interact."
-          : "Add authored street placements to populate this scene.")}</span>}
+        : <span>{hint || (editing
+          ? "EDIT SCENE: click a marker to edit its interaction, or the background to arrange all markers."
+          : scene.objects.length
+            ? "Click ground to walk, or click a person, object, or entrance to interact."
+            : "Add authored street placements to populate this scene.")}</span>}
     </div>
   </section>;
 }
