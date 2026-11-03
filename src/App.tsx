@@ -1042,7 +1042,13 @@ export default function App() {
     downloadBackup,
   }, authorToolGroups);
 
-  const streetVisible = streetMode && !editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active;
+  const inventoryInViewport = playerWorkspace?.feature === "inventory"
+    && playerWorkspace.workspace === "inventory" && streetMode;
+  const streetVisible = streetMode && !editorOpen
+    && (!playerWorkspaceOpen || inventoryInViewport)
+    && !pendingPlaySession && !radixPresentation.active;
+  const demoCaseAvailable = snapshot.interactions.some((interaction) =>
+    interaction.id === "d1910000-0000-4000-8000-000000000301");
   return <main className={`dos-screen digi-shell${streetVisible ? " digi-has-street" : " digi-text-only"}`} aria-label="digi.mn narrative and town" onPointerDown={() => {
     if (!radixPresentation.active && !typewriter.complete) typewriter.completeImmediately();
   }}>
@@ -1061,9 +1067,16 @@ export default function App() {
       </div>
     </header>
     <div className="dos-terminal digi-main">
-      {streetVisible ? <div className="digi-stage-slot">
+      {streetVisible ? <div className="digi-stage-slot" id="digi-game-viewport">
         <StreetPlaySurface snapshot={snapshot} playState={playState} currentNodeId={currentNode.id}
           canChoose={typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId}
+          onPreviewArt={demoCaseAvailable ? () => {
+            // This is an explicit preview only. Narrative text cues remain the
+            // canonical trigger for actual story cinematics.
+            const alley = currentNode.id === "d1910000-0000-4000-8000-000000000002";
+            setEventArtAssetId(alley ? "digi.mn.cutaway.alley-rescue" : "digi.mn.cutaway.cleaner-briefing");
+            setEventArtSource(undefined);
+          } : undefined}
           onChoose={(value) => {
           if (!typewriter.complete) { typewriter.completeImmediately(); return; }
           if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
@@ -1142,6 +1155,7 @@ export default function App() {
           </header>
           {!panel && !playerWorkspace && !pendingPlaySession && !radixPresentation.active ? <TerminalCommandComposer
         ref={terminalComposerRef}
+        submitOnChoiceSelect
         label={promptLabel}
         value={command}
         onChange={setCommand}
@@ -1234,6 +1248,7 @@ export default function App() {
           requestClose={authorTasks.requestClose}
         />
         <PlayerWorkspaceHost
+          portalTarget={inventoryInViewport ? document.getElementById("digi-game-viewport") : null}
           request={playerWorkspace}
           context={{
             snapshot,
