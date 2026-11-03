@@ -90,8 +90,14 @@ async function verifyDigiLayout(url, preload) {
       "Stage, narration, actions, and app controls must all exist");
     assert.ok(desktop.stage.width > 200 && desktop.stage.width <= 823,
       "Stage must be centered and capped rather than stretched across the desktop");
-    assert.ok(desktop.stage.bottom <= desktop.history.top + 2 && desktop.stage.bottom <= desktop.action.top + 2,
-      "Stage must sit above lower panels");
+    assert.ok(desktop.history.top <= desktop.stage.top + 2
+      && desktop.history.bottom >= desktop.action.bottom - 2,
+      "History must occupy the full left reading column");
+    assert.ok(desktop.history.right <= desktop.action.left + 2
+      && desktop.history.right <= desktop.stage.left + 2,
+      "The stage and terminal must share the right column without overlapping history");
+    assert.ok(desktop.stage.bottom <= desktop.action.top + 2,
+      "The stage must sit above the interactive terminal");
     assert.ok(noOverlap(desktop.history, desktop.action),
       "Narration and terminal must have physically separate panels");
     assert.ok(noOverlap(desktop.view, desktop.settings),
@@ -158,7 +164,16 @@ async function verifyDigiLayout(url, preload) {
     assert.ok(narrow.history.bottom <= narrow.action.top + 2, "Narrow history and actions must stack");
     assert.ok(narrow.action.width > 200, "Narrow terminal must remain usable");
 
-    return { desktop: "side-by-side", narrow: "stacked", suggestions: "contained", movement: "point-and-click" };
+    // Clicking a suggestion must EXECUTE the command directly (not leave it
+    // in the text field for a second Enter press).
+    await wc.executeJavaScript(`(() => {
+      const buttons=[...document.querySelectorAll(".terminal-command-choice")];
+      const bounty=buttons.find(button=>button.textContent?.trim()==="accept the bounty");
+      if (!bounty) throw new Error("First-run bounty suggestion was not displayed");
+      bounty.click();
+    })()`);
+    await until(wc, 'document.querySelector(".terminal-history")?.textContent?.includes("accept the bounty")', "one-click command submission");
+    return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click" };
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
