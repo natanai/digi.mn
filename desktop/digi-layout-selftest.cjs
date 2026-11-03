@@ -222,7 +222,53 @@ async function verifyDigiLayout(url, preload) {
     assert.ok(narrow.history.bottom <= narrow.action.top + 2, "Narrow history and actions must stack");
     assert.ok(narrow.action.width > 200, "Narrow terminal must remain usable");
 
-    return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click", inventory: "contained-in-street-viewport" };
+    // Author is the same live world, not a disconnected scene builder.
+    // Log in through the actual terminal, select an on-screen target, then
+    // inspect the resulting canonical Narrative workspace and layout editor.
+    win.setSize(1440, 900);
+    await pause(180);
+    await wc.executeJavaScript('document.querySelector(".terminal-command-textarea").focus()');
+    await wc.insertText("admin");
+    await until(wc, 'document.querySelector(".terminal-command-textarea")?.value === "admin"', "author command input");
+    await wc.executeJavaScript('document.querySelector(".terminal-command-submit").click()');
+    await until(wc, 'Boolean(document.querySelector(".terminal-command-secret"))', "author login field");
+    await wc.executeJavaScript('document.querySelector(".terminal-command-secret").focus()');
+    await wc.insertText("local");
+    await until(wc, 'document.querySelector(".terminal-command-secret")?.value === "local"', "author key input");
+    await wc.executeJavaScript('document.querySelector(".terminal-command-composer").requestSubmit()');
+    await until(wc, 'Boolean(document.querySelector(".author-home") && document.querySelector(".digi-street-bar button[title*="Inspect"]"))', "playable Author scene");
+    await wc.executeJavaScript('document.querySelector(".digi-street-bar button[title*="Inspect"]').click()');
+    await until(wc, 'Boolean(document.querySelector(".digi-street-editing"))', "in-scene inspection mode");
+    await wc.executeJavaScript(`(() => {
+      const canvas = document.querySelector(".digi-street-frame canvas");
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new PointerEvent("pointerdown", {
+        bubbles:true,cancelable:true,pointerId:3,pointerType:"mouse",button:0,
+        clientX:rect.left+rect.width*(148/256),
+        clientY:rect.top+rect.height*(98/144),
+      }));
+    })()`);
+    await until(wc, 'Boolean(document.querySelector(".author-workspace-layer"))', "existing interaction Author workspace");
+    assert.ok(await wc.executeJavaScript('Boolean(document.querySelector(".digi-stage-slot canvas"))'),
+      "Editing an interaction must keep the game viewport mounted");
+    await wc.executeJavaScript('document.querySelector(".work-surface-close")?.click()');
+    await until(wc, '!document.querySelector(".author-workspace-layer")', "return to game from interaction editor");
+    await wc.executeJavaScript(`(() => {
+      const canvas = document.querySelector(".digi-street-frame canvas");
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new PointerEvent("pointerdown", {
+        bubbles:true,cancelable:true,pointerId:4,pointerType:"mouse",button:0,
+        clientX:rect.left+rect.width*(38/256),
+        clientY:rect.top+rect.height*(45/144),
+      }));
+    })()`);
+    await until(wc, 'Boolean(document.querySelector(".digi-layout-editor"))', "canonical street layout Author editor");
+    assert.ok(await wc.executeJavaScript('Boolean(document.querySelector(".digi-layout-create"))'),
+      "A street scene must permit adding Narrative interactions from its layout editor");
+    assert.ok(await wc.executeJavaScript('Boolean(document.querySelector(".digi-stage-slot canvas"))'),
+      "Opening street layout must not unmount the playable world");
+
+    return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click", inventory: "contained-in-street-viewport", author: "in-scene-editing" };
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
