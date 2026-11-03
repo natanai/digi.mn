@@ -262,6 +262,49 @@
   background: #000;
 }
 .digi-shell .digi-actions-panel .terminal-lower.terminal-lower-expanded { position: absolute; inset: 0; z-index: 4; }
+/* Inventory is a player-facing in-world pane, not a full desktop takeover.
+   Keep the pre-programmed PlayerWorkspaceHost and its navigation/actions;
+   only change where digi.mn asks it to mount and how much space it receives. */
+.digi-shell .digi-stage-slot > .player-workspace-layer {
+  position: absolute;
+  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 9;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: .45em;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  overflow: hidden;
+}
+.digi-shell .digi-stage-slot > .player-workspace-layer .player-workspace-content,
+.digi-shell .digi-stage-slot > .player-workspace-layer .player-workspace-navigation,
+.digi-shell .digi-stage-slot > .player-workspace-layer .player-workspace-author-actions {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.digi-shell .digi-stage-slot > .player-workspace-layer .player-workspace-header {
+  min-height: 1.7em;
+  padding: 0 0 .25em;
+}
+.digi-shell .digi-stage-slot > .player-workspace-layer .player-workspace-header button,
+.digi-shell .digi-stage-slot > .player-workspace-layer .player-workspace-navigation button {
+  min-width: 1.6em;
+  min-height: 1.7em;
+}
+.digi-shell .digi-stage-slot > .player-workspace-layer .inventory-layout {
+  grid-template-columns: minmax(0, 1fr);
+  gap: .35em;
+}
+
 @media (min-width: 1000px) and (pointer: fine) {
   html[data-author-experience="true"] .digi-shell .digi-actions-panel .terminal-lower {
     position: fixed;
