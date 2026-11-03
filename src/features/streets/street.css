@@ -1,30 +1,117 @@
-.digi-view-toggle {
-  position: fixed; z-index: 10; top: max(4px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
-  width: auto; padding: 2px 7px; border: 1px solid #777; background: #0a0a0a; color: #ddd;
-  font: 10px "PreProgrammed VGA", monospace; cursor: pointer;
+/* Scene controls belong to the scene. App-wide controls belong to digiShell.css. */
+.digi-street {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #151a20;
+  color: #dce1e3;
+  cursor: default;
 }
-.digi-street-mode .terminal-history { top: 32%; }
-.digi-street { position: absolute; z-index: 1; top: 0; left: 0; right: 0; height: 31%; overflow: hidden;
-  display: flex; flex-direction: column; align-items: stretch; border-bottom: 1px solid #444; background: #15191d; cursor: default; }
-.digi-street-bar { flex: none; display: flex; justify-content: space-between; padding: 3px 4px; font-size: 10px; color: #ddd; }
-.digi-street-bar span { color: #999; }
-.digi-street-frame { flex: 1; min-height: 0; width: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.digi-street-frame canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; flex: none; }
-.digi-street-caption { flex: none; height: 19px; padding: 2px 4px; color: #aaa; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.digi-street-caption button { padding: 0; background: transparent; border: none; color: #fff0b3; cursor: pointer; text-align: left; }
-@media (max-width: 520px) { .digi-street-bar { font-size: 8px; } .digi-street { height: 30%; } .digi-street-mode .terminal-history { top: 31%; } }
-
-.digi-street-bar { align-items:center; gap:4px; }
-.digi-street-bar button { color:#e6e3d6; background:#202a32; border:1px solid #697682; padding:2px 5px; font:inherit; cursor:pointer; }
-.digi-district-map { position:absolute; top:21px; bottom:19px; left:0; right:0; z-index:3; background:#29323a; overflow:auto; display:flex; flex-direction:column; align-items:center; }
-.digi-district-map svg { height:calc(100% - 30px); min-height:90px; width:auto; max-width:100%; flex:1 1 auto; }
-.digi-district-help { display:flex; flex-wrap:wrap; gap:2px 12px; justify-content:center; width:100%; padding:3px 4px; font-size:9px; color:#d2d7db; }
-
-/* Opening the overhead map is a full-screen viewing mode, not a tiny inset in the text pane. */
+.digi-street-bar {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-height: 33px;
+  padding: 5px 10px;
+  border-bottom: 1px solid #3b4650;
+  background: #202933;
+  color: #dbe4e5;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.digi-street-bar > strong { font-weight: normal; letter-spacing: .08em; }
+.digi-street-bar > span { color: #b4bfc9; font-size: 10px; }
+.digi-street-bar button {
+  flex: none;
+  padding: 5px 8px;
+  border: 1px solid #667681;
+  background: #141b23;
+  color: #e9eff0;
+  font: inherit;
+  cursor: pointer;
+}
+.digi-street-frame {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  outline-offset: -4px;
+}
+.digi-street-frame canvas {
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+}
+.digi-street-caption {
+  flex: none;
+  min-height: 27px;
+  padding: 6px 10px;
+  overflow: hidden;
+  border-top: 1px solid #333f4a;
+  color: #aab8c2;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.digi-street-caption button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffe3a9;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.digi-district-map {
+  position: absolute;
+  inset: 34px 0 27px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  overflow: auto;
+  background: #29323a;
+}
+.digi-district-map svg { flex: 1 1 auto; min-height: 90px; width: auto; max-width: 100%; height: calc(100% - 40px); }
+.digi-district-help {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 5px 10px;
+  color: #d2d7db;
+  font-size: 10px;
+}
+/* Map is an explicit overlay with its own back button; no floating global icons compete. */
 .digi-street.digi-street-map-open {
-  position:fixed; z-index:11; left:0; right:0; top:0; bottom:0;
-  height:100dvh; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  position: fixed;
+  z-index: 85;
+  inset: 0;
+  width: 100vw;
+  height: var(--terminal-viewport-height, 100dvh);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
-.digi-street-map-open .digi-district-map { top:calc(23px + env(safe-area-inset-top)); bottom:calc(21px + env(safe-area-inset-bottom)); }
-.digi-street-map-open .digi-district-map svg { max-width:min(100%,760px); width:100%; }
-.digi-street-map-open .digi-street-frame { visibility:hidden; }
+.digi-street-map-open .digi-district-map {
+  top: calc(34px + env(safe-area-inset-top));
+  bottom: calc(27px + env(safe-area-inset-bottom));
+}
+.digi-street-map-open .digi-district-map svg { width: 100%; max-width: min(100%, 760px); }
+.digi-street-map-open .digi-street-frame { visibility: hidden; }
+@media (max-width: 640px) {
+  .digi-street-bar { gap: 5px; padding: 5px 6px; font-size: 10px; }
+  .digi-street-bar > span { font-size: 9px; }
+  .digi-street-caption { padding-inline: 7px; font-size: 10px; }
+}
