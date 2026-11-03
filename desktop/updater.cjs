@@ -7,32 +7,63 @@ const { spawn } = require("node:child_process");
 const { Readable } = require("node:stream");
 const { pipeline } = require("node:stream/promises");
 
-const RELEASE_API = "https://api.github.com/repos/natanai/digi.mn/releases/latest";
+// /releases/latest excludes GitHub prereleases. This application ships preview
+// builds, so inspect published releases and select the highest semver instead.
+const RELEASE_API = "https://api.github.com/repos/natanai/digi.mn/releases?per_page=30";
 const ASSET_LIMIT = 600 * 1024 * 1024;
 const USER_AGENT = "digi.mn-Windows-Portability";
-function semverParts(value) {
-  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(value ?? "");
-  return match ? match.slice(1).map(Number) : null;
+
+function parseVersion(value) {
+  const match = /^v?(\\d+)\\.(\\d+)\\.(\\d+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$/.exec(value ?? "");
+  if (!match) return null;
+  return {
+    core: match.slice(1, 4).map(Number),
+    prerelease: match[4] ? match[4].split(".") : [],
+  };
+}
+
+/** SemVer release ordering: 0.1.0-preview.4 < 0.1.0 < 0.1.1-preview.1. */
+function compareVersions(left, right) {
+  const a = parseVersion(left), b = parseVersion(right);
+  if (!a || !b) return null;
+  for (let i = 0; i < 3; i++) {
+    if (a.core[i] !== b.core[i]) return a.core[i] > b.core[i] ? 1 : -1;
+  }
+  if (!a.prerelease.length && !b.prerelease.length) return 0;
+  if (!a.prerelease.length) return 1;
+  if (!b.prerelease.length) return -1;
+  for (let i = 0; i < Math.min(a.prerelease.length, b.prerelease.length); i++) {
+    const x = a.prerelease[i], y = b.prerelease[i];
+    if (x === y) continue;
+    const xNum = /^\\d+$/.test(x), yNum = /^\\d+$/.test(y);
+    if (xNum && yNum) {
+      const xInt = BigInt(x), yInt = BigInt(y);
+      return xInt > yInt ? 1 : -1;
+    }
+    if (xNum !== yNum) return xNum ? -1 : 1;
+    return x > y ? 1 : -1;
+  }
+  return Math.sign(a.prerelease.length - b.prerelease.length);
 }
 function isNewerVersion(candidate, installed) {
-  const left = semverParts(candidate), right = semverParts(installed);
-  if (!left || !right) return false;
-  for (let i = 0; i < 3; i++) {
-    if (left[i] > right[i]) return true;
-    if (left[i] < right[i]) return false;
-  }
-  return false;
+  return compareVersions(candidate, installed) === 1;
 }
 function selectRelease(release, currentVersion) {
-  if (!release || release.draft || release.prerelease || !isNewerVersion(release.tag_name, currentVersion)) return null;
-  const version = release.tag_name.slice(1);
+  const installed = parseVersion(currentVersion);
+  if (!installed || !release || release.draft || !isNewerVersion(release.tag_name, currentVersion)) return null;
+  const candidate = parseVersion(release.tag_name);
+  if (!candidate) return null;
+  // A user on a stable release gets only stable updates. A preview tester
+  // can move to newer previews or the final stable release.
+  if (!installed.prerelease.length && (release.prerelease || candidate.prerelease.length)) return null;
+  const version = release.tag_name.replace(/^v/, "");
   const name = "digi.mn-v" + version + "-windows-x64.zip";
   const asset = release.assets?.find((item) => item.name === name);
   if (!asset || !Number.isSafeInteger(asset.size) || asset.size < 1 || asset.size > ASSET_LIMIT) {
-    throw new Error("The new release does not include a compatible Windows ZIP.");
+    throw new Error("The newer release " + version + " has no compatible Windows ZIP.");
   }
   if (!/^sha256:[a-f0-9]{64}$/i.test(asset.digest ?? "")) {
-    throw new Error("The new release has no verifiable SHA-256 digest.");
+    throw new Error("The newer release " + version + " has no verifiable SHA-256 digest.");
   }
   const expectedUrl = "https://github.com/natanai/digi.mn/releases/download/v" + version + "/" + name;
   if (asset.browser_download_url !== expectedUrl) {
@@ -40,13 +71,23 @@ function selectRelease(release, currentVersion) {
   }
   return { version, asset };
 }
+function selectUpdateFromReleases(releases, currentVersion) {
+  if (!Array.isArray(releases)) throw new Error("GitHub returned an invalid release list.");
+  const eligible = releases.filter((release) => release && !release.draft
+    && isNewerVersion(release.tag_name, currentVersion)
+    && (parseVersion(currentVersion)?.prerelease.length || !(release.prerelease || parseVersion(release.tag_name)?.prerelease.length)));
+  eligible.sort((a, b) => compareVersions(b.tag_name, a.tag_name) ?? 0);
+  // Fail closed on an invalid newest official release rather than silently
+  // falling back to a different artifact.
+  return eligible.length ? selectRelease(eligible[0], currentVersion) : null;
+}
 async function findUpdate(currentVersion) {
   const response = await fetch(RELEASE_API, {
     headers: { "user-agent": USER_AGENT, accept: "application/vnd.github+json" },
     signal: AbortSignal.timeout(25_000),
   });
   if (!response.ok) throw new Error("GitHub release check failed (" + response.status + ").");
-  return selectRelease(await response.json(), currentVersion);
+  return selectUpdateFromReleases(await response.json(), currentVersion);
 }
 function powershell(args) {
   return new Promise((resolve, reject) => {
@@ -119,4 +160,4 @@ function applyAfterExit({ root, tmp, scriptFile, parentPid }) {
   child.unref();
   return child;
 }
-module.exports = { isNewerVersion, selectRelease, findUpdate, stageUpdate, applyAfterExit };
+module.exports = { parseVersion, compareVersions, isNewerVersion, selectRelease, selectUpdateFromReleases, findUpdate, stageUpdate, applyAfterExit };
