@@ -10,7 +10,7 @@ This preview includes point-and-click street exploration (no movement keys), the
 
 The initial Author key is `local` in `installation.txt`; change it if desired. Your game data remains within `_engine/data`, and the downloadable archive does not contain saved player data. Later previews should be extracted separately; copy `_engine/data`, `assets`, and `installation.txt` over only after making a backup. Read `_engine/README.txt` in the package for the full instructions.
 
-**Preview scope:** This tests the engine, Author editing, spatial interaction, and a handwritten sample case. It does *not* yet include random bounty composition, your original Digimon pixel art, the Sapotama partner reveal, or the final combat/cutaway presentation.
+**Preview scope:** This tests the engine, Author editing, spatial interaction, and a handwritten sample case. It does *not* yet include random bounty composition, your original Digimon pixel art, the Sapotama partner reveal, or animated combat cutaways. The two still-image story cutaways are temporary examples.
 
 ## Development status
 
@@ -26,7 +26,15 @@ The initial Author key is `local` in `installation.txt`; change it if desired. Y
 
 The Cleaner case demonstrates actual conditional decisions. Talking with the vendor or inspecting the crate reveals a route into the alley. Listening to the Digimon and examining its injured companion unlocks an informed, peaceful resolution; returning the supplies for pay is a distinct conclusion. All this uses ordinary State flags and Narrative effects.
 
-The revised story is installed **only for new, untouched local projects**. Upgrading an existing installation preserves its authored content, including the original sample story. To inspect the new sample, extract a separate fresh portable folder without copying old save data.
+The revised story is installed **only for new, untouched local projects**. An existing, unchanged original demo can receive just the two new cutaway cues without replacing its story. If a project has any Author edits, its content is preserved and the artwork can be wired manually using the existing Media cue editor.
+
+## Cutaway art (temporary concept pass)
+
+Two **authored image cues** now demonstrate cinematic cutaways: accepting the bounty presents a Cleaner briefing illustration; choosing the informed nonviolent resolution presents an alley rescue illustration. The cues are ordinary `sprite` text-performance cues from the upstream Media system, not a separate digi.mn cutscene editor. They can be changed, moved, or removed through normal Author tooling.
+
+The preview includes two small, hand-authored SVG illustration stand-ins in `public/assets/cutaways/`, so the game can display cutaways immediately. A separate higher-resolution cel-inspired generated art pack provides `cleaner-briefing.webp` and `alley-rescue.webp`, plus original PNG references. To install the high-resolution artwork in the Windows portable build, copy the pack's `digi.mn/assets/cutaways/` contents into the same folder beside your `_engine`. Keep each WebP's `.asset.json` receipt. The stable IDs `digi.mn.cutaway.cleaner-briefing` and `digi.mn.cutaway.alley-rescue` override the bundled SVGs automatically without touching the story graph.
+
+These are provisional look-development references, **not final character art or a canonical early reveal of the Digimon partner**. The author retains control of the actual reveal and all final sprites. Older edited projects remain untouched on upgrade.
 
 ## Player layout (current preview)
 
