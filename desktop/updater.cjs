@@ -98,7 +98,7 @@ function powershell(args) {
     child.once("exit", (code) => code === 0 ? resolve() : reject(new Error("Windows ZIP extraction failed (" + code + ").")));
   });
 }
-async function downloadZip(asset, destination, progress) {
+async function downloadZip(asset, destination, progress, onPhase) {
   const response = await fetch(asset.browser_download_url, {
     headers: { "user-agent": USER_AGENT },
     signal: AbortSignal.timeout(180_000),
@@ -114,11 +114,12 @@ async function downloadZip(asset, destination, progress) {
     return chunk;
   });
   await pipeline(chunks, fs.createWriteStream(destination, { flags: "wx" }));
+  onPhase?.("verifying");
   if (received !== asset.size || ("sha256:" + hash.digest("hex")).toLowerCase() !== asset.digest.toLowerCase()) {
     throw new Error("The release ZIP failed integrity verification. No files were changed.");
   }
 }
-async function stageUpdate({ release, root, scriptSource, onProgress }) {
+async function stageUpdate({ release, root, scriptSource, onProgress, onPhase }) {
   const next = path.join(root, "_engine.next");
   const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), "digi-mn-update-"));
   try {
@@ -126,7 +127,8 @@ async function stageUpdate({ release, root, scriptSource, onProgress }) {
       throw new Error("An earlier update is incomplete. Inspect _engine.next or _engine.previous before updating.");
     }
     const zip = path.join(tmp, "release.zip");
-    await downloadZip(release.asset, zip, onProgress);
+    await downloadZip(release.asset, zip, onProgress, onPhase);
+    onPhase?.("extracting");
     const expanded = path.join(tmp, "unpacked");
     const psLiteral = (value) => "\'" + value.replace(/\'/g, "\'\'") + "\'";
     await powershell(["-Command", "Expand-Archive -LiteralPath " + psLiteral(zip) + " -DestinationPath " + psLiteral(expanded) + " -Force"]);
@@ -140,6 +142,7 @@ async function stageUpdate({ release, root, scriptSource, onProgress }) {
       if (!fs.existsSync(required)) throw new Error("The new ZIP has an unexpected installation layout.");
     }
     if (fs.existsSync(path.join(engine, "data"))) throw new Error("The downloaded runtime unexpectedly contains saved game data.");
+    onPhase?.("preparing");
     await fsp.cp(engine, next, { recursive: true, errorOnExist: true, force: false });
     const scriptFile = path.join(tmp, "apply-update.ps1");
     await fsp.copyFile(scriptSource, scriptFile);
@@ -152,12 +155,18 @@ async function stageUpdate({ release, root, scriptSource, onProgress }) {
     throw error;
   }
 }
-function applyAfterExit({ root, tmp, scriptFile, parentPid }) {
-  const child = spawn("powershell.exe", [
-    "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", scriptFile,
-    "-Root", root, "-OldPid", String(parentPid), "-TempRoot", tmp,
-  ], { detached: true, windowsHide: true, stdio: "ignore" });
-  child.unref();
-  return child;
+function applyAfterExit({ root, tmp, scriptFile, parentPid, version }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("powershell.exe", [
+      "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", scriptFile,
+      "-Root", root, "-OldPid", String(parentPid), "-TempRoot", tmp,
+      "-TargetVersion", version,
+    ], { detached: true, windowsHide: true, stdio: "ignore" });
+    child.once("error", reject);
+    child.once("spawn", () => {
+      child.unref();
+      resolve();
+    });
+  });
 }
 module.exports = { parseVersion, compareVersions, isNewerVersion, selectRelease, selectUpdateFromReleases, findUpdate, stageUpdate, applyAfterExit };
