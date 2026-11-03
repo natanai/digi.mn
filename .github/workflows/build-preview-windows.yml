@@ -119,10 +119,11 @@ jobs:
           Set-Content (Join-Path $root "_engine/data/game.txt") "saved game"
           $temp = Join-Path $env:RUNNER_TEMP "digi.mn Update Scratch"
           New-Item -ItemType Directory -Path $temp -Force | Out-Null
-          & "desktop/apply-update.ps1" -Root $root -OldPid 2147483647 -TempRoot $temp -SkipRestart
+          & "desktop/apply-update.ps1" -Root $root -OldPid 2147483647 -TempRoot $temp -TargetVersion "0.1.0-preview.999" -SkipRestart
           if ($LASTEXITCODE -ne 0) { throw "Updater dry-run failed." }
           if ((Get-Content (Join-Path $root "_engine/digi.mn.exe") -Raw).Trim() -ne "new") { throw "Runtime was not replaced." }
           if ((Get-Content (Join-Path $root "_engine/data/game.txt") -Raw).Trim() -ne "saved game") { throw "Saved game data was lost." }
+          if ((Get-Content (Join-Path $root ".last-installed-update") -Raw).Trim() -ne "0.1.0-preview.999") { throw "Update completion receipt was not created." }
           if (Test-Path (Join-Path $root "_engine.previous")) { throw "Updater left stale previous runtime." }
           Remove-Item $root -Recurse -Force
 
