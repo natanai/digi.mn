@@ -91,8 +91,8 @@ jobs:
       - name: Verify .ppgame drop arguments
         run: node --test desktop/project-drop.nodecheck.cjs
 
-      - name: Verify sample Cleaner mission and nonviolent resolution
-        run: node --test desktop/preview-demo.nodecheck.cjs
+      - name: Verify sample Cleaner mission, cutaways, and nonviolent resolution
+        run: node --test desktop/preview-demo.nodecheck.cjs desktop/demo-art.nodecheck.cjs
 
       - name: Verify updater metadata and Windows script
         shell: pwsh
