@@ -75,6 +75,9 @@ async function verifyDigiLayout(url, preload) {
   try {
     await win.loadURL(url);
     const wc = win.webContents;
+    wc.on("console-message", (_event, level, message) => {
+      if (level >= 2) console.error("[digi.mn Chromium]", message);
+    });
     await until(wc, 'Boolean(document.querySelector(".universe-bootstrap-action"))', "start button");
     await wc.executeJavaScript('document.querySelector(".universe-bootstrap-action").click()');
     await until(wc, 'Boolean(document.querySelector(".digi-shell .terminal-history") && document.querySelector(".digi-stage-slot"))', "playable game shell");
@@ -166,13 +169,20 @@ async function verifyDigiLayout(url, preload) {
 
     // Clicking a suggestion must EXECUTE the command directly (not leave it
     // in the text field for a second Enter press).
-    await wc.executeJavaScript(`(() => {
-      const buttons=[...document.querySelectorAll(".terminal-command-choice")];
-      const bounty=buttons.find(button=>button.textContent?.trim()==="accept the bounty");
-      if (!bounty) throw new Error("First-run bounty suggestion was not displayed");
-      bounty.click();
+    const beforeLines=await wc.executeJavaScript(
+      'document.querySelectorAll(".terminal-history .command-line").length');
+    const chosen=await wc.executeJavaScript(`(() => {
+      const options=[...document.querySelectorAll(".terminal-command-choice")];
+      const labels=options.map(button=>button.textContent?.trim() ?? "");
+      const bounty=options.find(button=>button.textContent?.trim()==="accept the bounty");
+      if (!bounty) return { clicked:false,labels };
+      try { bounty.click(); return {clicked:true,labels}; }
+      catch (error) { return {clicked:false,labels,error:String(error)}; }
     })()`);
-    await until(wc, 'document.querySelector(".terminal-history")?.textContent?.includes("accept the bounty")', "one-click command submission");
+    assert.ok(chosen.clicked, "The demo must offer an executable bounty choice: "+JSON.stringify(chosen));
+    await until(wc,
+      'document.querySelectorAll(".terminal-history .command-line").length > '+beforeLines,
+      "one-click command submission, not insertion into a draft");
     return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click" };
   } finally {
     if (!win.isDestroyed()) win.destroy();
