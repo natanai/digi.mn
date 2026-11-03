@@ -4,7 +4,7 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 ## Windows preview
 
-**[Download digi.mn v0.1.0-preview.4 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.4)**
+**[Download digi.mn v0.1.0-preview.5 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.5)**
 
 This preview includes the redesigned three-region desktop interface and the contained terminal suggestions. Preview versions now support in-app updates after the first manual installation of v0.1.0-preview.5 or later. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
 
