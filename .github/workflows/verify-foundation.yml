@@ -32,6 +32,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: node --check desktop/main.cjs && node --check desktop/updater.cjs && node --check desktop/preload.cjs
+      - run: node --test desktop/updater.nodecheck.cjs
       - run: npx vitest run src/features/streets/
       - run: npm run build
       - run: npm run verify:local
