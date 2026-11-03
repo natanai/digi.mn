@@ -4,13 +4,19 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 ## Windows preview
 
-**[Download digi.mn v0.1.0-preview.11 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.11)**
+**[Download digi.mn v0.1.0-preview.19 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.19)**
 
-This preview includes **animated pixel sprites of the Cleaner and red-maned armadillo-inspired Digimon partner in the actual street**, point-and-click exploration, the three-region desktop interface, contained terminal suggestions, and two authored cinematic cutaways. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
+This preview includes **Cleaner and red-maned Digimon sprites in the actual street**, point-and-click exploration, the restored monochrome pre-programmed visual language, a full-height history column on the left, one-click terminal suggestions, and authored cinematic cutaways. The early sprite sheets use a consistent pose and subtle walking motion until properly registered frame animations are drawn. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
 
 The initial Author key is `local` in `installation.txt`; change it if desired. Your game data remains within `_engine/data`, and the downloadable archive does not contain saved player data. Later previews should be extracted separately; copy `_engine/data`, `assets`, and `installation.txt` over only after making a backup. Read `_engine/README.txt` in the package for the full instructions.
 
 **Preview scope:** This tests the engine, Author editing, spatial interaction, and a handwritten sample case. It does *not* yet include random bounty composition, finalized character art, a canonical Sapotama partner reveal, or animated combat cutaways. The two still-image story cutaways are temporary examples.
+
+### Testing the player interface in preview.19
+
+The desktop now has a full-height scrolling history on the left, with recent narration kept near the terminal's vertical reading level; the street and actions occupy the right column. Colors, text, borders and controls use the original pre-programmed monochrome VGA visual language rather than a separate LCD theme. Selecting a terminal suggestion submits the command immediately. The character and companion no longer flicker through inconsistent prototype sprite frames, and the companion stops moving once it catches up.
+
+The authored **Cleaner briefing** and **Alley rescue** cutaways use the existing Media runtime, with a fixed shared-engine text compiler so their cue IDs survive notation parsing. You can also use **[VIEW CUTAWAY]** in the street header to preview art explicitly. The stock scene's **Inventory** opens as a contained player workspace over the game viewport, leaving history and actions accessible; the packaged Windows acceptance test checks this using the actual `inv` command and measures the overlay geometry.
 
 ## Development status
 
