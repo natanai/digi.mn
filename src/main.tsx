@@ -7,6 +7,8 @@ import "./ui/notificationLayout.css";
 import "./author/authorWorkspaceShell.css";
 import "./author/authorDesktopSuite.css";
 import "./ui/enginePortalSurfaces.css";
+// digi.mn owns one responsive game-shell layout; imported engine geometry stays upstream.
+import "./features/streets/digiShell.css";
 import { installAuthorNumberInputScrubbing } from "./author/ui/authorNumberInputScrubbing";
 import { primeProjectSnapshot } from "./data/api";
 import { saveCachedSnapshot } from "./data/localProject";
