@@ -37,23 +37,26 @@ const describeLayout = `(() => {
 const noOverlap = (a,b) => a && b &&
   (a.right <= b.left + 1 || b.right <= a.left + 1 ||
    a.bottom <= b.top + 1 || b.bottom <= a.top + 1);
-const spriteX = `(() => {
+const actorColorX = (r,g,b) => `(() => {
   const canvas=document.querySelector(".digi-street-frame canvas");
   if(!canvas) return null;
   const ctx=canvas.getContext("2d");
   if(!ctx) return null;
   const image=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  let xSum=0, count=0;
-  // Placeholder Cleaner sprite head uses #cfa388; the scene does not.
+  let xSum=0,count=0;
   for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++){
     const i=(y*canvas.width+x)*4;
-    if(image[i]===207 && image[i+1]===163 && image[i+2]===136 && image[i+3]===255){
+    if(image[i]===${r} && image[i+1]===${g} && image[i+2]===${b} && image[i+3]===255){
       xSum+=x;
       count++;
     }
   }
   return count ? xSum/count : null;
 })()`;
+// These distinctive atlas palette colors cannot be produced by scenery or the
+// old geometric placeholders. Checks therefore verify real imported art.
+const spriteX=actorColorX(211,150,109);
+const companionX=actorColorX(245,87,107);
 
 async function verifyDigiLayout(url, preload) {
   const win = new BrowserWindow({
@@ -111,7 +114,10 @@ async function verifyDigiLayout(url, preload) {
 
     // A real pointer event, projected through the canvas rect, must move the
     // rendered sprite. Keyboard steering is deliberately NOT part of digi.mn.
-    const firstX = await until(wc, spriteX, "drawn player sprite");
+    const firstX = await until(wc, spriteX, "real Cleaner atlas pixels");
+    const firstCompanionX = await until(wc, companionX, "real Digimon atlas pixels");
+    assert.ok(firstCompanionX < firstX,
+      "The red-maned companion must visibly follow behind the Cleaner");
     await wc.executeJavaScript(`(() => {
       const canvas = document.querySelector(".digi-street-frame canvas");
       const rect = canvas.getBoundingClientRect();
