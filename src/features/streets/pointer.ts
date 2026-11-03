@@ -74,5 +74,7 @@ export function walkToStreetPoint(
   const travel = Math.min(Math.max(0, delta), 0.05) * WALK_SPEED;
   if (travel >= distance) return { position: destination, arrived: true };
   const next = moveStreet(position, { x: dx, y: dy }, delta, sceneWidth);
-  return { position: next, arrived: Math.hypot(destination.x - next.x, destination.y - next.y) < 0.8 };
+  return Math.hypot(destination.x - next.x, destination.y - next.y) < 0.8
+    ? { position: destination, arrived: true }
+    : { position: next, arrived: false };
 }
