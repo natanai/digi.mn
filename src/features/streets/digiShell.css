@@ -93,8 +93,6 @@
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(180px, 43%) minmax(0, 1fr);
   grid-template-areas: "stage" "work";
-  container-name: digi-main;
-  container-type: inline-size;
   white-space: normal;
 }
 .digi-shell.digi-text-only .digi-main {
@@ -354,11 +352,17 @@
   }
 }
 
-@container digi-main (max-width: 820px) {
-  .digi-work-region { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
-  .digi-narration-panel .terminal-history { padding: 10px 13px; }
-  .digi-actions-panel .terminal-command-stack { padding: 10px 10px 0; }
-  .digi-actions-panel .terminal-lower { padding: 8px 10px 10px; }
+/* Avoid layout-containment here: the upstream Author dock is fixed-positioned. */
+@media (max-width: 950px) {
+  .digi-shell .digi-work-region {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+  .digi-shell .digi-narration-panel .terminal-history { padding: 10px 13px; }
+  .digi-shell .digi-actions-panel .terminal-command-stack { padding: 10px 10px 0; }
+  .digi-shell .digi-actions-panel .terminal-lower { padding: 8px 10px 10px; }
+  .digi-shell .digi-actions-panel .terminal-command-choices,
+  .digi-shell .digi-actions-panel .terminal-command-shell.menu-open .terminal-command-choices { max-height: min(14vh, 9em); }
 }
 @media (max-height: 650px) {
   .digi-shell .digi-main { grid-template-rows: minmax(145px, 38%) minmax(0, 1fr); }
