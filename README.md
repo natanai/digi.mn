@@ -6,11 +6,11 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 **[Download digi.mn v0.1.0-preview.10 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.10)**
 
-This preview includes point-and-click street exploration (no movement keys), the three-region desktop interface, contained terminal suggestions, and two authored cinematic cutaways. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
+This preview includes **animated pixel sprites of the Cleaner and red-maned armadillo-inspired Digimon partner in the actual street**, point-and-click exploration, the three-region desktop interface, contained terminal suggestions, and two authored cinematic cutaways. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
 
 The initial Author key is `local` in `installation.txt`; change it if desired. Your game data remains within `_engine/data`, and the downloadable archive does not contain saved player data. Later previews should be extracted separately; copy `_engine/data`, `assets`, and `installation.txt` over only after making a backup. Read `_engine/README.txt` in the package for the full instructions.
 
-**Preview scope:** This tests the engine, Author editing, spatial interaction, and a handwritten sample case. It does *not* yet include random bounty composition, your original Digimon pixel art, the Sapotama partner reveal, or animated combat cutaways. The two still-image story cutaways are temporary examples.
+**Preview scope:** This tests the engine, Author editing, spatial interaction, and a handwritten sample case. It does *not* yet include random bounty composition, finalized character art, a canonical Sapotama partner reveal, or animated combat cutaways. The two still-image story cutaways are temporary examples.
 
 ## Development status
 
@@ -20,13 +20,21 @@ The initial Author key is `local` in `installation.txt`; change it if desired. Y
 
 **Visual layout + district scaffold implemented.** Open a Node in Author mode and select **ARRANGE STREET** under Input Handling. The shared Author task provides a drag/keyboard-editable street preview for its existing inputs and saves changed placements using the same canonical interaction mutation. During play, **DISTRICT MAP** opens a full-screen generated map of streets connected through authored Entrance → AFTER transitions. The map is informational, not fast travel; the underlying text runtime still determines whether an entrance changes Node.
 
-**Not implemented yet:** procedural bounty/story generation, the permanent Cleaner hub, true district street-network generation, asset-backed sprite animation, nonviolent bounty completion validation, Sapotama partner reveal, and authored game content. Present buildings, character silhouettes, and district blocks are placeholders.
+**Not implemented yet:** procedural bounty/story generation, the permanent Cleaner hub, true district street-network generation, final authored sprite art, nonviolent bounty completion validation, Sapotama partner reveal, and authored game content. Present buildings and district blocks are placeholders. Cleaner and partner walk sprites are real but provisional asset-backed art.
 
 ## Sample mission continuity
 
 The Cleaner case demonstrates actual conditional decisions. Talking with the vendor or inspecting the crate reveals a route into the alley. Listening to the Digimon and examining its injured companion unlocks an informed, peaceful resolution; returning the supplies for pay is a distinct conclusion. All this uses ordinary State flags and Narrative effects.
 
 The revised story is installed **only for new, untouched local projects**. An existing, unchanged original demo can receive just the two new cutaway cues without replacing its story. If a project has any Author edits, its content is preserved and the artwork can be wired manually using the existing Media cue editor.
+
+## Playable Cleaner and Digimon pixel sprites
+
+The **actual street renderer** now draws four-frame transparent walk-cycle atlases for both characters. The Cleaner has their asymmetric short/shaved-side hairstyle and black clothing; the small armadillo-themed Digimon follows with a blue body and long red hair that suggests its shell, cloak, and weapon. This is an early visual pass, **without the egg in the Cleaner sprite**. The partner is a visual follower only: this does not add partner autonomy or canonically implement the Sapotama reveal.
+
+The tracked starter art is in `public/assets/sprites/cleaner-walk.png` (four 30 × 52 frames in a 120 × 52 atlas) and `partner-walk.png` (four 42 × 30 frames in a 168 × 30 atlas). The renderer reads those PNGs on launch and plays walking frames using nearest-neighbor pixel rendering. Clicking and interactions still use the single Narrative system.
+
+**Replacing the sprites in a portable installation:** Close the app, then place replacement PNGs at `digi.mn/assets/sprites/cleaner-walk.png` and `partner-walk.png`. Keep the same four-frame transparent, horizontal atlas dimensions. The portable host prioritizes these local files over its bundled starter art; no recompile or project import is needed. Back up the originals, and remove a replacement to restore the bundled version. Other dimensions require updating the atlas specification in `src/features/streets/spriteFrames.ts`.
 
 ## Cutaway art (temporary concept pass)
 
