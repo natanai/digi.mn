@@ -63,7 +63,11 @@ jobs:
       - name: Verify only curated demo cutaway Media is bundled
         shell: pwsh
         run: |
-          # No arbitrary Author installation assets belong in distributable builds.
+          # The repository also contains legacy pre-programmed example sprites.
+          # They are NOT digi.mn game art and must not leak into Windows releases.
+          Get-ChildItem public/assets -Directory |
+            Where-Object { $_.Name -ne "cutaways" } |
+            Remove-Item -Recurse -Force
           # These four tracked files are intentional, replaceable game examples.
           $expected = @(
             "cutaways/alley-rescue.svg",
