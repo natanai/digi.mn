@@ -1,6 +1,6 @@
 const assert=require("node:assert/strict");
 const {test}=require("node:test");
-const {buildDemoOperations}=require("./preview-demo.cjs");
+const {buildDemoOperations,buildCutawayUpgradeOperations}=require("./preview-demo.cjs");
 
 const start="00000000-0000-4000-8000-000000000001";
 const blank={revision:0,startNodeId:start,nodes:[{id:start,nodeNumber:1}],interactions:[]};
@@ -123,6 +123,37 @@ test("the visual cutaways are authored Media cues rather than a second cutscene 
   const paid=getAction("return the supplies to the client");
   assert.deepEqual(paid.outcomes[0].responsePerformance.cues,[],
     "The peaceful cutaway must not be shown on the paid resolution");
+});
+
+test("unmodified legacy demo gains art cues without changing any other narrative data",()=>{
+  const old=fixture();
+  const nodes=old.filter(entry=>entry.type==="node.upsert").map(entry=>entry.node);
+  const interactions=old.filter(entry=>entry.type==="interaction.upsert").map(entry=>({
+    ...entry.interaction,outcomes:entry.interaction.outcomes.map(outcome=>({
+      ...outcome,responsePerformance:{...outcome.responsePerformance,cues:[]},
+    })),
+  }));
+  const snapshot={...blank,revision:1,nodes,interactions};
+  const changes=buildCutawayUpgradeOperations(snapshot);
+  assert.equal(changes.length,2);
+  for(const change of changes){
+    const original=interactions.find(entry=>entry.id===change.interaction.id);
+    const expectedCues=change.interaction.outcomes[0].responsePerformance.cues;
+    assert.equal(expectedCues.length,1);
+    const stripped={...change.interaction,outcomes:[{
+      ...change.interaction.outcomes[0],
+      responsePerformance:{...change.interaction.outcomes[0].responsePerformance,cues:[]},
+    }]};
+    assert.deepEqual(stripped,original,
+      "The compatibility upgrade may only add a Media cue, not rewrite story content");
+  }
+  assert.deepEqual(buildCutawayUpgradeOperations({...snapshot,revision:2}),[],
+    "Any later authored mutation means don't silently patch the project");
+  assert.deepEqual(buildCutawayUpgradeOperations({...snapshot,interactions:[
+    {...interactions[0],notes:"User edit"},...interactions.slice(1),
+  ]}),[]);
+  assert.deepEqual(buildCutawayUpgradeOperations({...snapshot,interactions:interactions.map(entry=>
+    entry.wording==="offer to help them"?{...entry,notes:"Edited response"}:entry)}),[]);
 });
 
 test("never replace authored or previously edited projects",()=>{
