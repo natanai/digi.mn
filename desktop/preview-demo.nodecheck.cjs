@@ -52,16 +52,18 @@ test("first run has an editable, unique Cleaner scenario",()=>{
   assert.ok(inputs.every(x=>x.outcomes.every(o=>o.authorStatus==="configured")));
 });
 
-test("the player needs evidence before finding the alley",()=>{
-  const original={};
-  assert.equal(take("enter the service alley",original),null);
-  const active=take("accept the bounty",original);
+test("the alley remains visible but refuses travel until the player finds evidence",()=>{
+  const active=take("accept the bounty",{});
   assert.ok(active);
-  assert.equal(take("enter the service alley",active.state),null);
+  const door=getAction("enter the service alley");
+  assert.equal(door.choiceVisibleWhen.type,"always","An unopened door must not visually disappear");
+  const blocked=take("enter the service alley",active.state);
+  assert.ok(blocked,"The player receives a response even without a clue");
+  assert.equal(blocked.nodeId,door.sourceNodeId,"The player stays in the street");
   const vendor=take("ask the vendor",active.state);
-  assert.ok(take("enter the service alley",vendor.state));
+  assert.notEqual(take("enter the service alley",vendor.state)?.nodeId,door.sourceNodeId);
   const crate=take("examine the damaged crate",active.state);
-  assert.ok(take("enter the service alley",crate.state));
+  assert.notEqual(take("enter the service alley",crate.state)?.nodeId,door.sourceNodeId);
 });
 
 test("the peaceful ending depends on listening and observing, never on violence",()=>{
@@ -94,12 +96,15 @@ test("paid resolution resolves the case independently of the empathy route",()=>
   assert.equal(paid.state["digi.preview.case.active"],false);
 });
 
-test("typed commands cannot bypass presentation-based clue gates",()=>{
-  for(const label of ["enter the service alley","offer to help them"]){
-    const action=getAction(label);
-    assert.deepEqual(action.choiceVisibleWhen,action.outcomes[0].condition,
-      "A player must not bypass a clue merely by typing a hidden command");
-  }
+test("typed commands cannot bypass story conditions even when a door remains visible",()=>{
+  const door=getAction("enter the service alley");
+  assert.equal(door.choiceVisibleWhen.type,"always");
+  assert.notEqual(door.outcomes[0].condition.type,"always");
+  assert.equal(door.outcomes.length,2,"Door has a locked response and an unlocked transition");
+  assert.equal(door.outcomes[1].after.length,0);
+  const help=getAction("offer to help them");
+  assert.deepEqual(help.choiceVisibleWhen,help.outcomes[0].condition,
+    "The nonviolent resolution must require insight even when entered by typing");
 });
 
 test("never replace authored or previously edited projects",()=>{
