@@ -1070,6 +1070,17 @@ export default function App() {
       {streetVisible ? <div className="digi-stage-slot" id="digi-game-viewport">
         <StreetPlaySurface snapshot={snapshot} playState={playState} currentNodeId={currentNode.id}
           canChoose={typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId}
+          onEditStreetTarget={authorExperience
+            ? (interactionId) => openAuthorResource("interaction", interactionId)
+            : undefined}
+          onArrangeStreet={authorExperience
+            ? () => authorTasks.pushTask({
+              type: "feature",
+              feature: "streets",
+              workspace: "layout",
+              data: { nodeId: currentNode.id },
+            })
+            : undefined}
           onPreviewArt={demoCaseAvailable ? () => {
             // This is an explicit preview only. Narrative text cues remain the
             // canonical trigger for actual story cinematics.
