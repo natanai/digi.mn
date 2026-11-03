@@ -52,6 +52,7 @@
   outline-offset: -4px;
 }
 .digi-street-frame canvas {
+  touch-action: manipulation;
   display: block;
   flex: none;
   image-rendering: pixelated;
