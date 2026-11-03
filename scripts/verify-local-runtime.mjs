@@ -183,7 +183,10 @@ try {
         responseText: "The object is on the street.",
         dialogueText: "",
         speakerId: null,
-        responsePerformance: { charactersPerSecond: 18, cues: [] },
+        responsePerformance: { charactersPerSecond: 18, cues: [{
+          id: "digi-mn-media-cue-acceptance",
+          type: "sprite", start: 1, end: 2, value: acceptanceAssetId,
+        }] },
         dialoguePerformance: { charactersPerSecond: 18, cues: [] },
         effects: [],
         after: [],
@@ -206,6 +209,10 @@ try {
   const street = reopened.interactions.find((interaction) => interaction.id === "digi-mn-street-acceptance");
   if (!street || JSON.stringify(street.streetPlacement) !== JSON.stringify({ kind: "object", x: 192, y: 116 })) {
     throw new Error("Authored street placement was not preserved across D1 restart.");
+  }
+  const cue = street.outcomes[0]?.responsePerformance?.cues?.[0];
+  if (!cue || cue.type !== "sprite" || cue.value !== acceptanceAssetId) {
+    throw new Error(`Authored Media cue stable ID was corrupted across D1 restart: ${JSON.stringify(cue)}`);
   }
   await readAcceptanceMedia();
 
