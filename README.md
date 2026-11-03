@@ -4,9 +4,9 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 ## Windows preview
 
-**[Download digi.mn v0.1.0-preview.8 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.8)**
+**[Download digi.mn v0.1.0-preview.10 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.10)**
 
-This preview includes point-and-click street exploration (no movement keys), the three-region desktop interface, and contained terminal suggestions. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
+This preview includes point-and-click street exploration (no movement keys), the three-region desktop interface, contained terminal suggestions, and two authored cinematic cutaways. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
 
 The initial Author key is `local` in `installation.txt`; change it if desired. Your game data remains within `_engine/data`, and the downloadable archive does not contain saved player data. Later previews should be extracted separately; copy `_engine/data`, `assets`, and `installation.txt` over only after making a backup. Read `_engine/README.txt` in the package for the full instructions.
 
