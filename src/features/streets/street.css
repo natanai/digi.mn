@@ -47,6 +47,10 @@
   overflow: hidden;
   outline-offset: -4px;
 }
+.digi-street-frame:focus-visible {
+  outline: 2px solid #e1ca94;
+  outline-offset: -4px;
+}
 .digi-street-frame canvas {
   display: block;
   flex: none;
