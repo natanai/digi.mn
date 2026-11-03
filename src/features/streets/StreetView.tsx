@@ -8,10 +8,11 @@ import "./street.css";
 
 const spawn = (): StreetPosition => ({ x: 56, y: 114 });
 
-export function StreetView({ seed, choices, onChoose, district, currentNodeId, visitedNodeIds }: {
+export function StreetView({ seed, choices, onChoose, canChoose, district, currentNodeId, visitedNodeIds }: {
   seed: string;
   choices: readonly StreetChoice[];
   onChoose: (text: string) => void;
+  canChoose: boolean;
   district: DistrictLayout;
   currentNodeId: string;
   visitedNodeIds: readonly string[];
@@ -82,9 +83,15 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
           setHint("");
         } else if (intent.kind === "interact" && target
           && nearbyStreetObject(position.current, [target], 20)) {
-          destination.current = null; // prevent duplicate responses
-          setHint("");
-          chooseRef.current(target.input);
+          if (canChoose) {
+            destination.current = null; // prevent duplicate responses
+            setHint("");
+            chooseRef.current(target.input);
+          } else {
+            // Never lose a click while the prose is still animating. Wait here
+            // until the existing narrative runtime is ready to accept an input.
+            setHint((current) => current === "Waiting for narration" ? current : "Waiting for narration");
+          }
         } else {
           const before = position.current;
           const next = walkToStreetPoint(before, intent.position, delta, scene.width);
@@ -102,7 +109,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     };
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
-  }, [scene]);
+  }, [scene, canChoose]);
 
   const canvasPoint = (event: PointerEvent<HTMLCanvasElement>): StreetPosition | null =>
     canvasStreetPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect());
