@@ -1,4 +1,4 @@
-import { STREET_BOUNDS, VIEW_HEIGHT, VIEW_WIDTH, moveStreet,
+import { STREET_BOUNDS, VIEW_HEIGHT, VIEW_WIDTH, WALK_SPEED, moveStreet,
   type StreetObject, type StreetPosition, type StreetScene } from "./scene";
 
 export type StreetPointerTarget =
@@ -12,7 +12,7 @@ export function streetCamera(sceneWidth: number, playerX: number) {
 /** Return logical canvas coordinates only for pointer hits on the rendered canvas. */
 export function canvasStreetPoint(
   clientX: number, clientY: number,
-  rect: Pick<DOMRectReadOnly, "left" | "top" | "width" | "height">,
+  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
 ): StreetPosition | null {
   if (rect.width <= 0 || rect.height <= 0) return null;
   const x = (clientX - rect.left) / rect.width * VIEW_WIDTH;
@@ -71,7 +71,7 @@ export function walkToStreetPoint(
   const dx = destination.x - position.x, dy = destination.y - position.y;
   const distance = Math.hypot(dx, dy);
   if (distance < 0.8) return { position: destination, arrived: true };
-  const travel = Math.min(Math.max(0, delta), 0.05) * 54;
+  const travel = Math.min(Math.max(0, delta), 0.05) * WALK_SPEED;
   if (travel >= distance) return { position: destination, arrived: true };
   const next = moveStreet(position, { x: dx, y: dy }, delta, sceneWidth);
   return { position: next, arrived: Math.hypot(destination.x - next.x, destination.y - next.y) < 0.8 };
