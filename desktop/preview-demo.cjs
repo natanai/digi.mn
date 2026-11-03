@@ -36,14 +36,14 @@ const outcome=(n,text,to,condition=always,effects=[])=>({
   responsePerformance:performance,dialoguePerformance:performance,
   effects, after:to?[{id:id(900+n),type:"transition",destination:{nodeId:to.id,openingId:null}}]:[],
 });
-const input=(n,from,label,kind,x,to,text,{when=always,effects=[]}={})=>({
+const input=(n,from,label,kind,x,to,text,{when=always,outcomeWhen=when,effects=[],alternates=[]}={})=>({
   id:id(300+n),sourceNodeId:from.id,order:n,wording:label,
   matchMode:"command",outcomeSelection:"first",choiceVisibility:"immediate",
-  // Visibility makes options discoverable; the matching outcome condition
-  // enforces the same prerequisite even if a player types a hidden command.
+  // Visible entrances remain present in the world even when their effects
+  // are conditional. Their outcomes, not the rendered door, gate travel.
   choiceVisibleWhen:when,streetPlacement:{kind,x,y:114},
   aliases:[label],tags:["preview"],notes:"",
-  outcomes:[outcome(n,text,to,when,effects)],
+  outcomes:[outcome(n,text,to,outcomeWhen,effects),...alternates],
 });
 function buildDemoOperations(snapshot) {
   if (!snapshot || !Array.isArray(snapshot.nodes) || snapshot.nodes.length!==1 ||
@@ -74,7 +74,10 @@ function buildDemoOperations(snapshot) {
       }),
     input(4,street,"enter the service alley","entrance",410,alley,
       "You follow the clues into the alley. Something rustles behind a delivery box.",{
-        when:KNOWS_ALLEY,
+        outcomeWhen:KNOWS_ALLEY,
+        alternates:[outcome(40,
+          "You can see the service alley, but have no reason to intrude yet. Perhaps someone knows more, or the nearby crate has a clue.",
+          null,not(KNOWS_ALLEY))],
       }),
     input(5,street,"return home","entrance",580,home,
       "You return to the Cleaner office. The case remains open.",{
