@@ -3,10 +3,33 @@ import { AuthorDesktopResizeHandle } from "../author/AuthorDesktopResizeHandle";
 
 const SETTINGS_KEY = "pre-programmed:display-settings";
 
+type DesktopUpdateStatus = {
+  phase: "checking" | "available" | "downloading" | "verifying" | "extracting" |
+    "preparing" | "restarting" | "up-to-date" | "cancelled" | "failed";
+  message: string;
+  version?: string;
+  percent?: number;
+};
+
 type WindowsDesktopBridge = {
   checkForUpdates: () => Promise<{ message: string }>;
   getInstalledVersion: () => Promise<string>;
+  onUpdateStatus: (callback: (status: DesktopUpdateStatus) => void) => () => void;
 };
+
+function updateButtonLabel(status: DesktopUpdateStatus | null, updating: boolean): string {
+  if (!updating) return "CHECK FOR UPDATES";
+  switch (status?.phase) {
+    case "checking": return "CHECKING...";
+    case "available": return "UPDATE AVAILABLE...";
+    case "downloading": return `DOWNLOADING ${status.percent ?? 0}%...`;
+    case "verifying": return "VERIFYING...";
+    case "extracting": return "EXTRACTING...";
+    case "preparing": return "PREPARING...";
+    case "restarting": return "RESTARTING...";
+    default: return "UPDATING...";
+  }
+}
 function windowsDesktopBridge() {
   if (typeof window === "undefined") return undefined;
   return (window as Window & { preProgrammedDesktop?: WindowsDesktopBridge }).preProgrammedDesktop;
@@ -49,8 +72,18 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
   const [settings, setSettings] = useState(readDisplaySettings);
   const [updating, setUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
+  const [updateStatus, setUpdateStatus] = useState<DesktopUpdateStatus | null>(null);
   const [installedVersion, setInstalledVersion] = useState<string | null>(null);
   const desktop = windowsDesktopBridge();
+
+  useEffect(() => {
+    if (!desktop) return;
+    return desktop.onUpdateStatus((status) => {
+      setUpdateStatus(status);
+      setUpdateMessage(status.message);
+      setUpdating(!["up-to-date", "cancelled", "failed"].includes(status.phase));
+    });
+  }, [desktop]);
 
   useEffect(() => {
     if (!desktop || !open) return;
@@ -63,13 +96,15 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
   const checkForUpdates = async () => {
     if (!desktop || updating) return;
     setUpdating(true);
-    setUpdateMessage("CHECKING FOR UPDATES...");
+    setUpdateStatus({ phase: "checking", message: "Checking GitHub for updates..." });
+    setUpdateMessage("Checking GitHub for updates...");
     try {
       const result = await desktop.checkForUpdates();
       setUpdateMessage(result.message);
+      // A successfully prepared update stays busy until the app exits.
+      if (!result.message.startsWith("Installing v")) setUpdating(false);
     } catch (error) {
       setUpdateMessage(error instanceof Error ? error.message : "Could not check for updates.");
-    } finally {
       setUpdating(false);
     }
   };
@@ -120,9 +155,11 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
           <div className="desktop-installed-version"><span>INSTALLED VERSION</span><strong>{installedVersion && installedVersion !== "unavailable" ? `v${installedVersion}` : installedVersion ?? "…"}</strong></div>
           <button type="button" onClick={() => { setOpen(false); onNewGame?.(); }} disabled={!onNewGame}>NEW GAME</button>
           <button type="button" onClick={() => { void checkForUpdates(); }} disabled={updating}>
-            {updating ? "CHECKING / DOWNLOADING..." : "CHECK FOR UPDATES"}
+            {updateButtonLabel(updateStatus, updating)}
           </button>
-          {updateMessage ? <p aria-live="polite">{updateMessage}</p> : null}
+          {updateStatus?.phase === "downloading" ? <progress className="desktop-update-progress"
+            aria-label="Update download progress" max={100} value={updateStatus.percent ?? 0} /> : null}
+          {updateMessage ? <p role="status" aria-live="polite">{updateMessage}</p> : null}
         </div> : null}
       </section> : null}
     </div> : null}
