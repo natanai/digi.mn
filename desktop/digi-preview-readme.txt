@@ -28,11 +28,24 @@ Inside, talk to the Digimon and examine its injured companion to unlock the
 informed peaceful resolution. A separate route can earn the bounty payment. Helping them gives a resolved case without a
 financial reward. Either resolution returns you to the Cleaner home.
 
-This demonstration is installed ONCE only if the project's database is brand
-new and untouched. An upgrade preserves any existing authored project,
-including an older demo. To experience this revised case, extract a fresh
-portable folder without copying old data. Later launches keep your edits.
+The demo is installed only if the project's database is untouched. An older
+stock demo can receive JUST the new cutaway cues, but only if it has no Author
+edits. Any edited or imported story is preserved. To try a fully new demo,
+extract a fresh portable folder without copying old data.
 It does not simulate a procedurally generated bounty or Digimon evolution yet.
+
+CINEMATIC CUTAWAYS
+The engine ships two bundled SVG illustrations as temporary placeholders.
+The Cleaner briefing appears when accepting a bounty; the alley rescue scene
+appears after discovering the companion and offering to help peacefully.
+Close a cutaway to return to the normal game. These are ordinary authored
+Media image cues, not a separate cutscene or dialog engine.
+
+An optional cel-inspired HD art pack replaces the SVG stand-ins with sharper
+WebP game illustrations. Copy the pack's digi.mn/assets/cutaways folder into
+your portable digi.mn/assets/cutaways folder (with the .asset.json receipts).
+The same authored cues will resolve to your replacement art automatically.
+The included full-resolution PNGs are for your own repainting and tracing.
 
 YOUR FILES
 - _engine/data: game database, Electron settings, cache. Keep this folder safe.
