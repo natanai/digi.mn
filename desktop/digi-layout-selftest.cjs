@@ -58,6 +58,13 @@ async function verifyDigiLayout(url, preload) {
     await until(wc, 'Boolean(document.querySelector(".universe-bootstrap-action"))', "start button");
     await wc.executeJavaScript('document.querySelector(".universe-bootstrap-action").click()');
     await until(wc, 'Boolean(document.querySelector(".digi-shell .terminal-history") && document.querySelector(".digi-stage-slot"))', "playable game shell");
+    // Initial narration uses timed text. Its suggestions deliberately remain
+    // unavailable until that text finishes, so finish it before measuring the
+    // real interactive state, rather than asserting against a nonexistent menu.
+    await wc.executeJavaScript(`document.querySelector(".terminal-history")?.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, cancelable: true })
+    )`);
+    await until(wc, 'Boolean(document.querySelector(".terminal-command-choices"))', "available command choices", 20000);
     let desktop = await wc.executeJavaScript(describeLayout);
     assert.ok(desktop.stage && desktop.history && desktop.action && desktop.view && desktop.settings,
       "Stage, narration, actions, and app controls must all exist");
