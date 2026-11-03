@@ -107,6 +107,24 @@ test("typed commands cannot bypass story conditions even when a door remains vis
     "The nonviolent resolution must require insight even when entered by typing");
 });
 
+test("the visual cutaways are authored Media cues rather than a second cutscene runtime",()=>{
+  const accepted=getAction("accept the bounty");
+  const peaceful=getAction("offer to help them");
+  const briefing=accepted.outcomes[0].responsePerformance.cues;
+  const rescue=peaceful.outcomes[0].responsePerformance.cues;
+  assert.equal(briefing.length,1);
+  assert.equal(rescue.length,1);
+  assert.equal(briefing[0].type,"sprite");
+  assert.equal(rescue[0].type,"sprite");
+  assert.equal(briefing[0].value,"digi.mn.cutaway.cleaner-briefing");
+  assert.equal(rescue[0].value,"digi.mn.cutaway.alley-rescue");
+  assert.ok(briefing[0].start < briefing[0].end);
+  assert.ok(rescue[0].start < rescue[0].end);
+  const paid=getAction("return the supplies to the client");
+  assert.deepEqual(paid.outcomes[0].responsePerformance.cues,[],
+    "The peaceful cutaway must not be shown on the paid resolution");
+});
+
 test("never replace authored or previously edited projects",()=>{
   for(const changed of [
     {...blank,revision:1},
