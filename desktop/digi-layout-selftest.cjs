@@ -183,6 +183,33 @@ async function verifyDigiLayout(url, preload) {
       "Arrow/WASD keys must never steer the player, even if the scene has focus");
     await wc.executeJavaScript('window.dispatchEvent(new KeyboardEvent("keyup",{key:"d",bubbles:true}))');
 
+    // Inventory is a *player workspace inside the game viewport*, not a
+    // full-desktop takeover. Drive the real editable default "inv" command.
+    await until(wc, 'Boolean(document.querySelector(".terminal-command-textarea"))', "inventory input");
+    await wc.executeJavaScript(`(() => {
+      const input = document.querySelector(".terminal-command-textarea");
+      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value").set;
+      nativeSetter.call(input, "inv");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
+    await until(wc, 'document.querySelector(".terminal-command-textarea")?.value === "inv"', "typed inventory command");
+    await pause(100);
+    await wc.executeJavaScript('document.querySelector(".terminal-command-submit").click()');
+    await until(wc, 'Boolean(document.querySelector(".player-workspace-layer.digi-viewport-workspace"))', "game-viewport inventory");
+    const inventoryBounds = await wc.executeJavaScript(`(() => {
+      const area = document.querySelector(".digi-stage-slot").getBoundingClientRect();
+      const inventory = document.querySelector(".player-workspace-layer").getBoundingClientRect();
+      return { area: {left:area.left,right:area.right,top:area.top,bottom:area.bottom},
+        inventory: {left:inventory.left,right:inventory.right,top:inventory.top,bottom:inventory.bottom} };
+    })()`);
+    assert.ok(inventoryBounds.inventory.left >= inventoryBounds.area.left - 2
+      && inventoryBounds.inventory.right <= inventoryBounds.area.right + 2
+      && inventoryBounds.inventory.top >= inventoryBounds.area.top - 2
+      && inventoryBounds.inventory.bottom <= inventoryBounds.area.bottom + 2,
+      "Inventory must be fully contained in the game viewport, never cover the narration or terminal");
+    await wc.executeJavaScript('document.querySelector(".player-workspace-header button")?.click()');
+    await until(wc, '!document.querySelector(".player-workspace-layer")', "close inventory viewport");
+
     // The narrower layout is stacked rather than compressing input beneath text.
     win.setSize(850, 740);
     await pause(200);
@@ -192,7 +219,7 @@ async function verifyDigiLayout(url, preload) {
     assert.ok(narrow.history.bottom <= narrow.action.top + 2, "Narrow history and actions must stack");
     assert.ok(narrow.action.width > 200, "Narrow terminal must remain usable");
 
-    return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click" };
+    return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click", inventory: "contained-in-street-viewport" };
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
