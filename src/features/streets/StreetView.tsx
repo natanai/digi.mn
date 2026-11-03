@@ -52,7 +52,11 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       if (mapOpenRef.current) { if (event.key === "Escape") { event.preventDefault(); setMapOpen(false); } return; }
-      if (isTyping() || event.altKey || event.ctrlKey || event.metaKey || event.repeat && event.key.toLowerCase() === "e") return;
+      // A spatial input should not hijack keys while the player reads history,
+      // operates menus, or uses the original terminal/Author UI.
+      if (document.activeElement !== frame.current || isTyping()
+        || event.altKey || event.ctrlKey || event.metaKey
+        || (event.repeat && event.key.toLowerCase() === "e")) return;
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
       if (movementKeys[key]) { event.preventDefault(); pressed.current.add(key); }
       else if (key === "e" && nearbyRef.current) {
@@ -94,7 +98,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
       <span>WASD / ARROWS · E INTERACT</span>
       <button type="button" aria-pressed={mapOpen} onClick={() => { pressed.current.clear(); setMapOpen((current)=>!current); }}>{mapOpen?"BACK TO STREET":"DISTRICT MAP"}</button>
     </div>
-    <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls" onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
+    <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls" onBlur={() => pressed.current.clear()} onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
         style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale }}
         aria-label="Pixel-art town, controlled with arrows or WASD" role="img" />
