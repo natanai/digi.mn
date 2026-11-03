@@ -66,6 +66,12 @@ Do **not** create a second parallel dialogue system, separate combat narrative e
 
 Pre-programmed's current Windows packaging, generic terminal-focused player shell, and historical audits should be evaluated before copying wholesale; do not treat unrelated infrastructure as a mandatory product requirement.
 
+## Provisional in-engine character sprites
+
+The first street renderer now displays art assets instead of its original block-character placeholder: an original Cleaner with asymmetrical hair and black clothes, plus a small blue armadillo-themed companion whose long crimson mane suggests a protective cloak or shell. The imported four-frame atlases are provisional concept sprites, not a final canonical model sheet. **No egg appears in the protagonist sprite**; the Sapotama belongs to the separately authored partner origin sequence.
+
+Sprite loading, animation and following behavior are owned by the digi.mn Streets feature; game state and narrative interactions remain upstream-owned. The companion follows visually, without separate autonomy, combat or an early canonical partner reveal. Portable installations can override the bundled images using the same relative paths in their adjacent `assets/sprites` directory. Fixed starter atlases are 120 × 52 (Cleaner, four 30 × 52 frames) and 168 × 30 (partner, four 42 × 30 frames). Pixel rendering uses the existing integer canvas scale.
+
 ## Art direction and replaceable cinematic stills
 
 A visual reference from *Digimon: The Movie* (2000) establishes a **late-1990s/early-2000s cel-animation aesthetic** for cinematic cutaways: confident outlines, economical cel shadows, painterly architecture, and clear emotional staging. Reinterpret the visual language with original characters and staging rather than copying movie frames or characters.
