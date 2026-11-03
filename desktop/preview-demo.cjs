@@ -124,6 +124,50 @@ function buildDemoOperations(snapshot) {
   ];
 }
 
+/**
+ * An early digi.mn preview may have installed the stock case before the two
+ * image cues existed. Upgrade ONLY an otherwise untouched first-run demo.
+ * A modified author project, arbitrary import, or missing original response
+ * is never silently rewritten.
+ */
+function buildCutawayUpgradeOperations(snapshot) {
+  if (!snapshot || snapshot.revision !== 1 || !Array.isArray(snapshot.nodes)
+    || snapshot.nodes.length !== 5 || !Array.isArray(snapshot.interactions)
+    || snapshot.interactions.length !== 12) return [];
+  const targets = [
+    { id:id(301),label:"accept the bounty",outcomeId:id(501),
+      text:"You take the assignment. Deliveries are missing near South Market. Ask around before drawing conclusions.",
+      art:CUTAWAY_BRIEFING, cueId:1 },
+    { id:id(308),label:"offer to help them",outcomeId:id(508),
+      text:"Understanding what happened, you offer to negotiate with the vendor and keep both Digimon safe.",
+      art:CUTAWAY_RESCUE, cueId:8 },
+  ];
+  const changes = [];
+  for (const expected of targets) {
+    const interaction = snapshot.interactions.find((entry)=>entry.id===expected.id);
+    const outcome = interaction?.outcomes?.[0];
+    const flagsAreStock = interaction?.tags?.length===1 && interaction.tags[0]==="preview";
+    if (interaction?.wording!==expected.label || !flagsAreStock
+      || interaction.notes!=="" || interaction.outcomes.length!==1
+      || outcome?.id!==expected.outcomeId
+      || outcome.responseText!==expected.text
+      || outcome.responsePerformance?.charactersPerSecond!==24
+      || !Array.isArray(outcome.responsePerformance.cues)) return [];
+    // If already upgraded, no mutation is necessary. Other authored cues
+    // mean the author has changed the response, so don't interfere.
+    if (outcome.responsePerformance.cues.length) return [];
+    changes.push({type:"interaction.upsert",interaction:{
+      ...interaction,
+      outcomes:[{
+        ...outcome,responsePerformance:{
+          ...outcome.responsePerformance,cues:[cutaway(expected.cueId,expected.art)],
+        },
+      }],
+    }});
+  }
+  return changes;
+}
+
 // For Windows preview: initialize only on the *untouched* first-run local DB.
 // Imported project or later authored edits are never overwritten.
 async function seedFirstRunDemo(miniflare,authorKey) {
@@ -135,14 +179,21 @@ async function seedFirstRunDemo(miniflare,authorKey) {
     return JSON.parse(body);
   };
   const snapshot=await send("/api/project/snapshot");
-  const operations=buildDemoOperations(snapshot);
+  const firstRunOperations=buildDemoOperations(snapshot);
+  const artUpgradeOperations=firstRunOperations.length?[]:buildCutawayUpgradeOperations(snapshot);
+  const operations=firstRunOperations.length?firstRunOperations:artUpgradeOperations;
   if(!operations.length)return {seeded:false,reason:"Project already initialized or edited"};
   const login=await send("/api/author/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:authorKey})});
   const updated=await send("/api/author/mutate",{
     method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+login.token},
-    body:JSON.stringify({expectedRevision:snapshot.revision,description:"Install digi.mn preview's editable Cleaner demo",operations}),
+    body:JSON.stringify({
+      expectedRevision:snapshot.revision,
+      description:firstRunOperations.length?"Install digi.mn preview's editable Cleaner demo":"Attach cutaway art to untouched stock Cleaner demo",
+      operations,
+    }),
   });
   if(!updated.snapshot?.interactions?.some(x=>x.wording==="offer to help them"))throw new Error("Preview demo was not persisted");
-  return {seeded:true,nodes:updated.snapshot.nodes.length,interactions:updated.snapshot.interactions.length};
+  return {seeded:Boolean(firstRunOperations.length), upgradedArt:Boolean(artUpgradeOperations.length),
+    nodes:updated.snapshot.nodes.length,interactions:updated.snapshot.interactions.length};
 }
-module.exports={buildDemoOperations,seedFirstRunDemo};
+module.exports={buildDemoOperations,buildCutawayUpgradeOperations,seedFirstRunDemo};
