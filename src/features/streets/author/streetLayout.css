@@ -9,3 +9,15 @@
 .digi-layout-row span { flex:1; overflow-wrap:anywhere; }
 .digi-layout-row small { display:block; color:var(--dos-muted,#999); padding-top:3px; }
 .digi-layout-row button { background:transparent; color:var(--dos-bright,#ddd); border:1px solid #777; padding:5px; cursor:pointer; }
+
+.digi-layout-create {
+  width: 100%;
+  padding: 8px 5px;
+  border: 1px dotted var(--dos-line);
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.digi-layout-create:disabled { color: var(--dos-muted); cursor: not-allowed; }
