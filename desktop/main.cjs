@@ -314,6 +314,17 @@ async function runSelfTest() {
     throw new Error("Portable installation start-button text contract failed.");
   }
 
+  // The two scene cutaways must actually ship inside the portable runtime,
+  // rather than existing only in authored cue metadata.
+  for (const filename of ["cleaner-briefing.svg", "alley-rescue.svg"]) {
+    const response = await fetch(new URL("assets/cutaways/" + filename, url), { cache: "no-store" });
+    const svg = await response.text();
+    if (!response.ok || !svg.includes('viewBox="0 0 960 540"')
+      || !response.headers.get("content-type")?.includes("image/svg+xml")) {
+      throw new Error("Bundled Cleaner cutaway could not be loaded: " + filename);
+    }
+  }
+
   const healthResponse = await fetch(new URL("api/health", url), { cache: "no-store" });
   const health = await healthResponse.json();
   if (!healthResponse.ok || health?.ok !== true || health?.authorConfigured !== true
