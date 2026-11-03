@@ -1062,7 +1062,9 @@ export default function App() {
     </header>
     <div className="dos-terminal digi-main">
       {streetVisible ? <div className="digi-stage-slot">
-        <StreetPlaySurface snapshot={snapshot} playState={playState} currentNodeId={currentNode.id} onChoose={(value) => {
+        <StreetPlaySurface snapshot={snapshot} playState={playState} currentNodeId={currentNode.id}
+          canChoose={typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId}
+          onChoose={(value) => {
           if (!typewriter.complete) { typewriter.completeImmediately(); return; }
           if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
         }} />
