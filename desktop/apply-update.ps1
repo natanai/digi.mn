@@ -2,12 +2,14 @@ param(
   [Parameter(Mandatory=$true)][string]$Root,
   [Parameter(Mandatory=$true)][int]$OldPid,
   [Parameter(Mandatory=$true)][string]$TempRoot,
+  [string]$TargetVersion = "",
   [switch]$SkipRestart
 )
 $ErrorActionPreference = "Stop"
 $engine = Join-Path $Root "_engine"
 $next = Join-Path $Root "_engine.next"
 $previous = Join-Path $Root "_engine.previous"
+$receipt = Join-Path $Root ".last-installed-update"
 $switched = $false
 $success = $false
 try {
@@ -32,10 +34,19 @@ try {
   }
   $executable = Join-Path $engine "digi.mn.exe"
   if (-not (Test-Path -LiteralPath $executable)) { throw "The replacement executable is missing." }
+  # The next launch confirms success only when this receipt matches its own version.
+  # Create it after swapping and transferring saved data, before launching the new app.
+  if ($TargetVersion -ne "") {
+    if ($TargetVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$') {
+      throw "The target version is invalid."
+    }
+    Set-Content -LiteralPath $receipt -Value $TargetVersion -Encoding Ascii
+  }
   if (-not $SkipRestart) { Start-Process -FilePath $executable -WorkingDirectory $engine }
   $success = $true
 } catch {
   $message = $_.Exception.Message
+  Remove-Item -LiteralPath $receipt -Force -ErrorAction SilentlyContinue
   try {
     if (Test-Path -LiteralPath $previous) {
       if ($switched -and (Test-Path -LiteralPath $engine)) {
