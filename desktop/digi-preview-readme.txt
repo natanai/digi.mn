@@ -36,8 +36,9 @@ It does not simulate a procedurally generated bounty or Digimon evolution yet.
 
 CHARACTERS IN THE STREET
 The playable street now shows a pixel-art Cleaner and a small red-maned,
-armadillo-like Digimon walking alongside. Both use imported, four-frame
-transparent sprite sheets, not the old colored rectangles. Clicking the
+armadillo-like Digimon walking alongside. Both use imported transparent concept sheets, not the old colored rectangles.
+For now the game holds a consistent pose with subtle motion to avoid morphing
+between imperfect early animation frames. Clicking the
 street moves the Cleaner; the companion follows visually without autonomous
 battle or a formal Sapotama reveal.
 
@@ -47,10 +48,19 @@ assets/sprites/partner-walk.png (168x30, four 42x30 frames). Keep
 transparency and horizontal layout. The bundled atlas is the fallback.
 These are prototype designs and can be redrawn later.
 
+INTERFACE
+The whole UI uses the original pre-programmed black-and-white terminal
+language. Narration fills the entire left column; the right side has the
+pixel-art game viewport above an action terminal. Clicking any command
+suggestion executes it without an extra Enter press. Inventory opens within
+the game viewport, and the district map stays within the game area.
+
 CINEMATIC CUTAWAYS
 The engine ships two bundled SVG illustrations as temporary placeholders.
 The Cleaner briefing appears when accepting a bounty; the alley rescue scene
 appears after discovering the companion and offering to help peacefully.
+A [VIEW CUTAWAY] button in the street header also previews an image without
+changing any story flags. It is there to make art testing straightforward.
 Close a cutaway to return to the normal game. These are ordinary authored
 Media image cues, not a separate cutscene or dialog engine.
 
