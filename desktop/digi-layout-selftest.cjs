@@ -121,6 +121,31 @@ async function verifyDigiLayout(url, preload) {
         "Expanded suggestions must not cover the story log");
     }
 
+    // Clicking a suggestion must EXECUTE the command directly (not leave it
+    // in the text field for a second Enter press).
+    const beforeLines=await wc.executeJavaScript(
+      'document.querySelectorAll(".terminal-history .command-line").length');
+    const chosen=await wc.executeJavaScript(`(() => {
+      const options=[...document.querySelectorAll(".terminal-command-choice")];
+      const labels=options.map(button=>button.textContent?.trim() ?? "");
+      const bounty=options.find(button=>button.textContent?.trim()==="accept the bounty");
+      if (!bounty) return { clicked:false,labels };
+      try { bounty.click(); return {clicked:true,labels}; }
+      catch (error) { return {clicked:false,labels,error:String(error)}; }
+    })()`);
+    assert.ok(chosen.clicked, "The demo must offer an executable bounty choice: "+JSON.stringify(chosen));
+    await until(wc,
+      'document.querySelectorAll(".terminal-history .command-line").length > '+beforeLines,
+      "one-click command submission, not insertion into a draft");
+    // The stock bounty emits a real authored cutaway cue. Verify the Media
+    // viewer receives an actual image rather than an empty overlay.
+    await until(wc, 'Boolean(document.querySelector(".media-asset-viewer img"))', "authored bounty cutaway", 8000);
+    await wc.executeJavaScript('document.querySelector(".media-asset-viewer-toolbar button:last-child")?.click()');
+    await until(wc, '!document.querySelector(".media-asset-viewer")', "close cinematic viewer");
+    await wc.executeJavaScript(`document.querySelector(".terminal-history")?.dispatchEvent(
+      new PointerEvent("pointerdown",{bubbles:true,cancelable:true})
+    )`);
+
     // A real pointer event, projected through the canvas rect, must move the
     // rendered sprite. Keyboard steering is deliberately NOT part of digi.mn.
     const firstX = await until(wc, spriteX, "real Cleaner atlas pixels");
@@ -167,22 +192,6 @@ async function verifyDigiLayout(url, preload) {
     assert.ok(narrow.history.bottom <= narrow.action.top + 2, "Narrow history and actions must stack");
     assert.ok(narrow.action.width > 200, "Narrow terminal must remain usable");
 
-    // Clicking a suggestion must EXECUTE the command directly (not leave it
-    // in the text field for a second Enter press).
-    const beforeLines=await wc.executeJavaScript(
-      'document.querySelectorAll(".terminal-history .command-line").length');
-    const chosen=await wc.executeJavaScript(`(() => {
-      const options=[...document.querySelectorAll(".terminal-command-choice")];
-      const labels=options.map(button=>button.textContent?.trim() ?? "");
-      const bounty=options.find(button=>button.textContent?.trim()==="accept the bounty");
-      if (!bounty) return { clicked:false,labels };
-      try { bounty.click(); return {clicked:true,labels}; }
-      catch (error) { return {clicked:false,labels,error:String(error)}; }
-    })()`);
-    assert.ok(chosen.clicked, "The demo must offer an executable bounty choice: "+JSON.stringify(chosen));
-    await until(wc,
-      'document.querySelectorAll(".terminal-history .command-line").length > '+beforeLines,
-      "one-click command submission, not insertion into a draft");
     return { desktop: "full-height-log-left", narrow: "stacked", suggestions: "one-click-contained", movement: "point-and-click" };
   } finally {
     if (!win.isDestroyed()) win.destroy();
