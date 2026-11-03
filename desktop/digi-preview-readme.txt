@@ -20,13 +20,17 @@ FIRST LAUNCH
    layout editor. SAVE when finished.
 
 THE DEMO
-The initial scenario is intentionally small. Take a notice, explore South
-Market, enter the service alley, listen to the frightened Digimon, and choose
-how to resolve the situation. Helping them gives a resolved case without a
+The case is deliberately small, but discoveries now matter. Take the
+assignment, ask the vendor or inspect the crate to discover why the alley
+matters. The alley entrance remains visible even before you have a lead.
+Inside, talk to the Digimon and examine its injured companion to unlock the
+informed peaceful resolution. A separate route can earn the bounty payment. Helping them gives a resolved case without a
 financial reward. Either resolution returns you to the Cleaner home.
 
 This demonstration is installed ONCE only if the project's database is brand
-new and untouched. Later launches preserve your work and your authored data.
+new and untouched. An upgrade preserves any existing authored project,
+including an older demo. To experience this revised case, extract a fresh
+portable folder without copying old data. Later launches keep your edits.
 It does not simulate a procedurally generated bounty or Digimon evolution yet.
 
 YOUR FILES
