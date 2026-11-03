@@ -30,9 +30,9 @@ The revised story is installed **only for new, untouched local projects**. An ex
 
 ## Playable Cleaner and Digimon pixel sprites
 
-The **actual street renderer** now draws four-frame transparent walk-cycle atlases for both characters. The Cleaner has their asymmetric short/shaved-side hairstyle and black clothing; the small armadillo-themed Digimon follows with a blue body and long red hair that suggests its shell, cloak, and weapon. This is an early visual pass, **without the egg in the Cleaner sprite**. The partner is a visual follower only: this does not add partner autonomy or canonically implement the Sapotama reveal.
+The **actual street renderer** loads transparent four-frame concept atlases for both characters. The Cleaner has their asymmetric short/shaved-side hairstyle and black clothing; the small armadillo-themed Digimon follows with a blue body and long red hair that suggests its shell, cloak, and weapon. This is an early visual pass, **without the egg in the Cleaner sprite**. The partner is a visual follower only: this does not add partner autonomy or canonically implement the Sapotama reveal.
 
-The tracked starter art is in `public/assets/sprites/cleaner-walk.png` (four 30 × 52 frames in a 120 × 52 atlas) and `partner-walk.png` (four 42 × 30 frames in a 168 × 30 atlas). The renderer reads those PNGs on launch and plays walking frames using nearest-neighbor pixel rendering. Clicking and interactions still use the single Narrative system.
+The tracked starter art is in `public/assets/sprites/cleaner-walk.png` (four 30 × 52 frames in a 120 × 52 atlas) and `partner-walk.png` (four 42 × 30 frames in a 168 × 30 atlas). The renderer reads those PNGs on launch and currently uses a consistent reference pose with subtle stepping motion. Early experimental frames changed the silhouette unpredictably, so full frame cycling is temporarily disabled until the walk sheets are redrawn and properly registered. Clicking and interactions still use the single Narrative system.
 
 **Replacing the sprites in a portable installation:** Close the app, then place replacement PNGs at `digi.mn/assets/sprites/cleaner-walk.png` and `partner-walk.png`. Keep the same four-frame transparent, horizontal atlas dimensions. The portable host prioritizes these local files over its bundled starter art; no recompile or project import is needed. Back up the originals, and remove a replacement to restore the bundled version. Other dimensions require updating the atlas specification in `src/features/streets/spriteFrames.ts`.
 
@@ -46,9 +46,11 @@ These are provisional look-development references, **not final character art or 
 
 ## Player layout (current preview)
 
-The game UI now has **three distinct regions**: a centered, pixel-perfect street viewport; a pale LCD-style narration/history panel; and a separate dark terminal/action panel. The log is readable and scrollable but not editable in player mode. In Author experience, authored lines can still expose their normal source-edit affordances.
+The UI now returns to **pre-programmed's canonical monochrome design language**: black backgrounds, VGA typography, gray text, white command suggestions and minimal dotted borders. The narration/history occupies the **full left column**; the street viewport sits above terminal actions on the right. The newest narration is positioned near the actions' vertical level, rather than isolated at the bottom of the screen. Author mode retains the upstream left dock.
 
-Suggestions scroll **inside the action panel** rather than floating over the narration. The view toggle and Options/Author controls share one toolbar, while the District Map button belongs to the street panel. At narrower window widths the history and actions stack. These changes are owned in `src/features/streets/digiShell.css` and the street feature; shared pre-programmed terminal behavior remains reusable.
+Suggested terminal commands execute **immediately on click**. The command field still supports typing and Enter. A small [VIEW CUTAWAY] control in the playable street explicitly previews the demo's cinematic images; the actual story cues still fire when accepting the bounty or reaching the informed peaceful resolution. District Map and Inventory are contained within the game viewport instead of taking over the desktop.
+
+At narrow widths the game stacks the stage, history and terminal. These layout changes are owned in `src/features/streets/digiShell.css` and the Streets feature; shared pre-programmed geometry and gameplay behavior remain the upstream source of truth.
 
 ## Authoring a street interaction
 
