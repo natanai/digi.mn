@@ -22,6 +22,12 @@ The initial Author key is `local` in `installation.txt`; change it if desired. Y
 
 **Not implemented yet:** procedural bounty/story generation, the permanent Cleaner hub, true district street-network generation, asset-backed sprite animation, nonviolent bounty completion validation, Sapotama partner reveal, and authored game content. Present buildings, character silhouettes, and district blocks are placeholders.
 
+## Player layout (current preview)
+
+The game UI now has **three distinct regions**: a centered, pixel-perfect street viewport; a pale LCD-style narration/history panel; and a separate dark terminal/action panel. The log is readable and scrollable but not editable in player mode. In Author experience, authored lines can still expose their normal source-edit affordances.
+
+Suggestions scroll **inside the action panel** rather than floating over the narration. The view toggle and Options/Author controls share one toolbar, while the District Map button belongs to the street panel. At narrower window widths the history and actions stack. These changes are owned in `src/features/streets/digiShell.css` and the street feature; shared pre-programmed terminal behavior remains reusable.
+
 ## Authoring a street interaction
 
 1. Open Author mode and edit a Node's existing input/interaction.
