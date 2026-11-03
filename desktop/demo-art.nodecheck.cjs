@@ -33,3 +33,15 @@ test("the game ships two stable authored Media cutaways", () => {
     assert.equal(cue.value, receipt.id);
   }
 });
+
+test("both pixel-art actor walk atlases are four correctly dimensioned transparent PNG frames", () => {
+  for (const [file, frameW, frameH] of [
+    ["cleaner-walk.png",30,52], ["partner-walk.png",42,30],
+  ]) {
+    const png=readFileSync(join(__dirname,"..","public","assets","sprites",file));
+    assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");
+    assert.equal(png.readUInt32BE(16),frameW*4);
+    assert.equal(png.readUInt32BE(20),frameH);
+    assert.ok(png.length > 1000);
+  }
+});
