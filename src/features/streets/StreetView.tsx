@@ -25,6 +25,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
   const chooseRef = useRef(onChoose);
   chooseRef.current = onChoose;
   const [hint, setHint] = useState("");
+  const [hoverTarget, setHoverTarget] = useState(false);
   const [scale, setScale] = useState(1);
   const [mapOpen, setMapOpen] = useState(false);
   const mapOpenRef = useRef(false);
@@ -36,6 +37,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     position.current = spawn();
     destination.current = null;
     setHint("");
+    setHoverTarget(false);
     setMapOpen(false);
   }, [seed]);
 
@@ -123,6 +125,7 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     const point = canvasPoint(event);
     if (!point) return;
     const target = hitStreetObject(point, scene, streetCamera(scene.width, position.current.x));
+    setHoverTarget(Boolean(target));
     setHint((previous) => {
       const label = target ? `Click to interact: ${target.label}` : "";
       return previous === label ? previous : label;
@@ -146,9 +149,9 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     <div ref={frame} className="digi-street-frame" role="group"
       aria-label="Point-and-click town scene. Click ground to walk or a character, object, or door to approach and interact. The terminal offers the same interactions.">
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
-        style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale }}
+        style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale, cursor: hoverTarget ? "pointer" : "crosshair" }}
         onPointerDown={clickScene} onPointerMove={hoverScene}
-        onPointerLeave={() => { if (!destination.current) setHint(""); }}
+        onPointerLeave={() => { setHoverTarget(false); if (!destination.current) setHint(""); }}
         aria-label="Pixel-art point-and-click town" role="img" />
     </div>
     {mapOpen ? <DistrictMap district={district} currentNodeId={currentNodeId} visitedNodeIds={visitedNodeIds} /> : null}
