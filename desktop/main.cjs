@@ -8,6 +8,10 @@ const { randomUUID } = require("node:crypto");
 const { projectPathFromArguments } = require("./project-drop.cjs");
 const { findUpdate, stageUpdate, applyAfterExit } = require("./updater.cjs");
 const { seedFirstRunDemo } = require("./preview-demo.cjs");
+const { verifyDigiLayout } = require("./digi-layout-selftest.cjs");
+
+// Only the packaged smoke test bypasses the browser audio-gesture gate.
+if (process.argv.includes("--self-test")) app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -322,6 +326,10 @@ async function runSelfTest() {
   if (!snapshotResponse.ok || typeof snapshot?.revision !== "number" || !Array.isArray(snapshot?.nodes)) {
     throw new Error("Portable D1 project did not initialize.");
   }
+
+  // Real Chromium geometry protects against the stage/log/terminal overlap regression.
+  const layoutResult = await verifyDigiLayout(url, path.join(__dirname, "preload.cjs"));
+  console.log("digi.mn visual layout smoke-test passed", JSON.stringify(layoutResult));
 
   const loginResponse = await fetch(new URL("api/author/login", url), {
     method: "POST",
