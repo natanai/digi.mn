@@ -1,6 +1,6 @@
 import { nearbyStreetObject, streetHash, VIEW_HEIGHT, VIEW_WIDTH, type StreetPosition, type StreetScene } from "../scene";
 import { streetCamera } from "../pointer";
-import { actorFrame, drawActor, type StreetActorArt } from "./actorSprites";
+import { drawActor, type StreetActorArt } from "./actorSprites";
 
 const palette = ["#535c70", "#6b6574", "#596e6f", "#7f6a62", "#5a6272"];
 
@@ -110,8 +110,11 @@ export function renderStreet(
     const cx = Math.round(companion.x - camera);
     const cy = Math.round(companion.y);
     if (art?.partner) {
-      drawActor(ctx, art.partner, cx, cy + 5,
-        actorFrame(elapsed, companionMoving, art.partner.frames), facing);
+      // Early concept sheets change silhouette between frames. Use the
+      // consistent reference pose and a one-pixel footfall bob until the
+      // authored sheets have properly registered animation frames.
+      const bob = companionMoving ? Math.floor(elapsed / 170) % 2 : 0;
+      drawActor(ctx, art.partner, cx, cy + 5 - bob, 0, facing);
     } else {
       // Explicit fallback when an installed PNG is missing or has wrong dimensions.
       ctx.fillStyle = "#343e7e";
@@ -127,8 +130,8 @@ export function renderStreet(
   const px = Math.round(player.x - camera);
   const py = Math.round(player.y);
   if (art?.cleaner) {
-    drawActor(ctx, art.cleaner, px, py + 6,
-      actorFrame(elapsed, moving, art.cleaner.frames), facing);
+    const bob = moving ? Math.floor(elapsed / 170) % 2 : 0;
+    drawActor(ctx, art.cleaner, px, py + 6 - bob, 0, facing);
   } else {
     // Keep the engine usable even if its replaceable sprite image is deleted.
     const stride = moving ? Math.floor(elapsed / 140) % 2 : 0;
