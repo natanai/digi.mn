@@ -72,7 +72,7 @@ jobs:
             "cutaways/cleaner-briefing.svg.asset.json"
           ) | Sort-Object
           $actual = @(Get-ChildItem public/assets -Recurse -File |
-            ForEach-Object { [System.IO.Path]::GetRelativePath((Resolve-Path public/assets).Path, $_.FullName).Replace('\\','/') } |
+            ForEach-Object { [System.IO.Path]::GetRelativePath((Resolve-Path public/assets).Path, $_.FullName).Replace([char]92,'/') } |
             Sort-Object)
           if (($actual -join "`n") -ne ($expected -join "`n")) {
             $actual | ForEach-Object { Write-Host $_ }
