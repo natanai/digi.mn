@@ -1,5 +1,6 @@
 import { nearbyStreetObject, streetHash, VIEW_HEIGHT, VIEW_WIDTH, type StreetPosition, type StreetScene } from "../scene";
 import { streetCamera } from "../pointer";
+import { actorFrame, drawActor, type StreetActorArt } from "./actorSprites";
 
 const palette = ["#535c70", "#6b6574", "#596e6f", "#7f6a62", "#5a6272"];
 
@@ -10,6 +11,10 @@ export function renderStreet(
   elapsed: number,
   moving: boolean,
   target: StreetPosition | null = null,
+  art: StreetActorArt | null = null,
+  companion: StreetPosition | null = null,
+  facing: -1 | 1 = 1,
+  companionMoving = false,
 ) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
@@ -99,20 +104,45 @@ export function renderStreet(
     ctx.fillStyle = "#5e5038";
     ctx.fillRect(tx - 1, ty + 3, 3, 1);
   }
-  // Placeholder pixel sprite: walking legs alternate; replace via repository Media sprite sheets.
+  // The companion follows visually, without creating a parallel gameplay actor
+  // or triggering any Narrative interaction. Their red mane is part of the atlas.
+  if (companion) {
+    const cx = Math.round(companion.x - camera);
+    const cy = Math.round(companion.y);
+    if (art?.partner) {
+      drawActor(ctx, art.partner, cx, cy + 5,
+        actorFrame(elapsed, companionMoving, art.partner.frames), facing);
+    } else {
+      // Explicit fallback when an installed PNG is missing or has wrong dimensions.
+      ctx.fillStyle = "#343e7e";
+      ctx.fillRect(cx - 9, cy - 12, 17, 12);
+      ctx.fillStyle = "#d44367";
+      ctx.fillRect(cx - 14, cy - 16, 8, 16);
+      ctx.fillRect(cx + 5, cy - 18, 9, 18);
+      ctx.fillStyle = "#e3dce7";
+      ctx.fillRect(cx + 2, cy - 10, 4, 4);
+    }
+  }
+
   const px = Math.round(player.x - camera);
   const py = Math.round(player.y);
-  const stride = moving ? Math.floor(elapsed / 140) % 2 : 0;
-  ctx.fillStyle = "#353341";
-  ctx.fillRect(px - 3, py - 5, 3, 5 + stride);
-  ctx.fillRect(px + 1, py - 5, 3, 6 - stride);
-  ctx.fillStyle = "#3e6373";
-  ctx.fillRect(px - 5, py - 16, 10, 11);
-  ctx.fillStyle = "#cfa388";
-  ctx.fillRect(px - 4, py - 24, 8, 8);
-  ctx.fillStyle = "#413844";
-  ctx.fillRect(px - 5, py - 25, 10, 4);
-  ctx.fillStyle = "#263545";
-  ctx.fillRect(px - 5, py - 14, 2, 7);
-  ctx.fillRect(px + 3, py - 14, 2, 7);
+  if (art?.cleaner) {
+    drawActor(ctx, art.cleaner, px, py + 6,
+      actorFrame(elapsed, moving, art.cleaner.frames), facing);
+  } else {
+    // Keep the engine usable even if its replaceable sprite image is deleted.
+    const stride = moving ? Math.floor(elapsed / 140) % 2 : 0;
+    ctx.fillStyle = "#353341";
+    ctx.fillRect(px - 3, py - 5, 3, 5 + stride);
+    ctx.fillRect(px + 1, py - 5, 3, 6 - stride);
+    ctx.fillStyle = "#3e6373";
+    ctx.fillRect(px - 5, py - 16, 10, 11);
+    ctx.fillStyle = "#cfa388";
+    ctx.fillRect(px - 4, py - 24, 8, 8);
+    ctx.fillStyle = "#413844";
+    ctx.fillRect(px - 5, py - 25, 10, 4);
+    ctx.fillStyle = "#263545";
+    ctx.fillRect(px - 5, py - 14, 2, 7);
+    ctx.fillRect(px + 3, py - 14, 2, 7);
+  }
 }
