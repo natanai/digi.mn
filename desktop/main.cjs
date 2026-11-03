@@ -7,6 +7,7 @@ const { pathToFileURL } = require("node:url");
 const { randomUUID } = require("node:crypto");
 const { projectPathFromArguments } = require("./project-drop.cjs");
 const { findUpdate, stageUpdate, applyAfterExit } = require("./updater.cjs");
+const { seedFirstRunDemo } = require("./preview-demo.cjs");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -199,6 +200,9 @@ async function startLocalHost() {
     resourcePersistencePath: dataRoot,
   }));
   await miniflare.ready;
+  // Only an untouched first-run preview installation gets sample authored content.
+  // Ordinary saved projects and imported .ppgame files remain intact.
+  await seedFirstRunDemo(miniflare, authorKey);
 
   let portableAssets = [];
   let assetWarning = "";
@@ -531,7 +535,7 @@ function queueDroppedProject(filename) {
       type: "warning",
       title: "Load a .ppgame project?",
       message: "Load " + path.basename(filename) + "?",
-      detail: "This replaces the currently authored game in this installation. Pre-Programmed will save a .ppgame backup of your current game first. Ordinary image/audio assets remain in the assets folder.",
+      detail: "This replaces the currently authored game in this installation. digi.mn will save a .ppgame backup of your current game first. Ordinary image/audio assets remain in the assets folder.",
       buttons: ["Load game", "Cancel"],
       defaultId: 1,
       cancelId: 1,
@@ -552,7 +556,7 @@ function queueDroppedProject(filename) {
     dialog.showMessageBox(mainWindow, {
       type: "error",
       title: "Could not load .ppgame",
-      message: "Pre-Programmed could not load " + path.basename(filename) + ".",
+      message: "digi.mn could not load " + path.basename(filename) + ".",
       detail,
       buttons: ["OK"],
     });
@@ -567,12 +571,12 @@ async function checkAndInstallUpdate() {
   try {
     const current = app.getVersion();
     const release = await findUpdate(current);
-    if (!release) return { message: "Pre-Programmed " + current + " is already up to date." };
+    if (!release) return { message: "digi.mn " + current + " is already up to date." };
     const choice = await dialog.showMessageBox(mainWindow, {
       type: "question",
-      title: "Pre-Programmed update",
+      title: "digi.mn update",
       message: "Update from v" + current + " to v" + release.version + "?",
-      detail: "Pre-Programmed will download the official Windows release, verify it, and restart automatically. Your game, saves, Author key, and assets will be kept. This requires an internet connection and free disk space.",
+      detail: "digi.mn will download the official Windows release, verify it, and restart automatically. Your game, saves, Author key, and assets will be kept. This requires an internet connection and free disk space.",
       buttons: ["Download and update", "Not now"],
       defaultId: 1,
       cancelId: 1,
@@ -643,7 +647,7 @@ async function createWindow() {
     dialog.showMessageBox(mainWindow, {
       type: "warning",
       title: "Asset folder needs attention",
-      message: "Pre-Programmed started, but one or more files in assets could not be indexed.",
+      message: "digi.mn started, but one or more files in assets could not be indexed.",
       detail: assetWarning,
     });
   }
@@ -682,7 +686,7 @@ if (!app.requestSingleInstanceLock()) {
     if (initialProject) queueDroppedProject(initialProject);
   }).catch((error) => {
     console.error(error);
-    dialog.showErrorBox("Pre-Programmed could not start", error instanceof Error ? error.message : String(error));
+    dialog.showErrorBox("digi.mn could not start", error instanceof Error ? error.message : String(error));
     app.exit(1);
   });
 
