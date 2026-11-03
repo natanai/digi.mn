@@ -6,7 +6,7 @@ import {
 } from "../../src/features/narrative/sceneContext";
 import { normalizeInteractionOutcomeProse } from "../../src/features/narrative/interactionProse";
 import type { GameNode, Interaction, NarrativeFlowStep, NodeOpening, TextPerformance } from "../../src/features/narrative/model";
-import { legacyAssetId } from "../../src/features/media/assetReference";
+import { legacyAssetId, normalizeMediaCueAssetReference } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import type { WorkerFeaturePersistence } from "./types";
 
@@ -100,7 +100,7 @@ function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?:
     ...performance,
     cues: (performance.cues ?? []).map((cue) => (
       (cue.type === "audio" || cue.type === "sprite") && typeof cue.value === "string"
-        ? { ...cue, value: legacyAssetId(cue.value) }
+        ? { ...cue, value: normalizeMediaCueAssetReference(cue.value) }
         : cue
     )),
   };
