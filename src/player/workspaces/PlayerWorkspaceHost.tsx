@@ -13,11 +13,14 @@ export function PlayerWorkspaceHost({
   context,
   onNavigate,
   onClose,
+  portalTarget,
 }: {
   request: PlayerWorkspaceRequest | null;
   context: PlayerWorkspaceContext;
   onNavigate: (request: PlayerWorkspaceRequest) => void;
   onClose: () => void;
+  /** Optional game viewport for a compact player surface (inventory). */
+  portalTarget?: HTMLElement | null;
 }) {
   if (!request) return null;
   const contribution = resolvePlayerWorkspace(request);
@@ -29,7 +32,7 @@ export function PlayerWorkspaceHost({
   const title = activeNavigation?.label ?? contribution?.label ?? "Unavailable";
 
   return createPortal(
-    <section className={`player-workspace-layer${context.author ? " is-authoring" : ""}`} aria-label={title}>
+    <section className={`player-workspace-layer${context.author ? " is-authoring" : ""}${portalTarget ? " digi-viewport-workspace" : ""}`} aria-label={title}>
       <header className="player-workspace-header">
         <strong>{title}</strong>
         <button type="button" aria-label="Close and return to game" onClick={onClose}>[X]</button>
@@ -52,6 +55,6 @@ export function PlayerWorkspaceHost({
           : <p className="player-workspace-error">THIS PLAYER WORKSPACE IS NOT INSTALLED.</p>}
       </div>
     </section>,
-    document.body,
+    portalTarget ?? document.body,
   );
 }
