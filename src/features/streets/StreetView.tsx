@@ -3,7 +3,8 @@ import { renderStreet } from "./ui/renderer";
 import { loadStreetActorArt, type StreetActorArt } from "./ui/actorSprites";
 import { DistrictMap } from "./ui/DistrictMap";
 import type { DistrictLayout } from "./district";
-import { buildStreetScene, integerPixelScale, moveStreet, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
+import { buildStreetScene, integerPixelScale, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
+import { followCompanion, walkingFacing } from "./companionMotion";
 import { canvasStreetPoint, hitStreetObject, resolveStreetPointer, walkToStreetPoint, type StreetPointerTarget, streetCamera } from "./pointer";
 import "./street.css";
 
@@ -124,24 +125,11 @@ export function StreetView({ seed, choices, onChoose, canChoose, district, curre
       }
       // Companionship is currently a visual follow effect, not autonomous AI.
       // Keep the partner behind the direction of travel at a readable distance.
-      if (moving && Math.abs(position.current.x - companion.current.x) > 0.5) {
-        // Direction follows the player's own last movement, not the partner.
-        facing.current = position.current.x > lastPlayerX.current ? 1 : -1;
-      }
+      if (moving) facing.current = walkingFacing(lastPlayerX.current, position.current.x, facing.current);
       lastPlayerX.current = position.current.x;
-      const follow = {
-        x: position.current.x - facing.current * 32,
-        y: Math.min(129, position.current.y + 3),
-      };
-      const companionBefore = companion.current;
-      const companionNext = moveStreet(companionBefore, {
-        x: follow.x - companionBefore.x,
-        y: follow.y - companionBefore.y,
-      }, delta * 0.9, scene.width);
-      companion.current = companionNext;
-      const companionMoving = Math.hypot(
-        companionNext.x - companionBefore.x, companionNext.y - companionBefore.y,
-      ) > 0.03;
+      const follow = followCompanion(companion.current, position.current, facing.current, delta, scene.width);
+      companion.current = follow.position;
+      const companionMoving = follow.moving;
       const context = canvas.current?.getContext("2d");
       if (context) renderStreet(
         context, scene, position.current, now, moving, destination.current?.position ?? null,
