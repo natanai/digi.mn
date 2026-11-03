@@ -1,10 +1,11 @@
-appId: app.preprogrammed.engine
-productName: Pre-Programmed
+appId: mn.digi.engine
+productName: digi.mn
 asar: false
 directories:
   output: release
 files:
   - main.cjs
+  - preview-demo.cjs
   - project-drop.cjs
   - updater.cjs
   - preload.cjs
@@ -23,6 +24,6 @@ win:
     - target: portable
       arch:
         - x64
-  artifactName: Pre-Programmed-${version}-windows-x64.exe
+  artifactName: digi.mn-${version}-windows-x64.exe
 portable:
   requestExecutionLevel: user
