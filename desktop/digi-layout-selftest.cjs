@@ -109,19 +109,38 @@ async function verifyDigiLayout(url, preload) {
         "Expanded suggestions must not cover the story log");
     }
 
-    // Movement must work in the focused street and must NOT steal keyboard
-    // controls from the terminal. Read the actual canvas instead of mock state.
-    const firstX=await until(wc, spriteX, "drawn player sprite");
-    await wc.executeJavaScript(`document.querySelector(".digi-street-frame").focus();
-      window.dispatchEvent(new KeyboardEvent("keydown",{key:"d",bubbles:true}));`);
-    const walkedX=await until(wc, `${spriteX} > ${firstX+5} && ${spriteX}`, "actual keyboard movement");
-    await wc.executeJavaScript(`window.dispatchEvent(new KeyboardEvent("keyup",{key:"d",bubbles:true}));
-      document.querySelector(".digi-view-toggle").focus();
-      window.dispatchEvent(new KeyboardEvent("keydown",{key:"d",bubbles:true}));`);
+    // A real pointer event, projected through the canvas rect, must move the
+    // rendered sprite. Keyboard steering is deliberately NOT part of digi.mn.
+    const firstX = await until(wc, spriteX, "drawn player sprite");
+    await wc.executeJavaScript(`(() => {
+      const canvas = document.querySelector(".digi-street-frame canvas");
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new PointerEvent("pointerdown", {
+        bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0,
+        clientX: rect.left + rect.width * (190/256),
+        clientY: rect.top + rect.height * (116/144),
+      }));
+    })()`);
+    const walkedX = await until(wc, `${spriteX} > ${firstX + 5} && ${spriteX}`, "actual click-to-walk movement");
+    assert.ok(walkedX > firstX + 5, "Player must walk to the clicked world location");
+    // Clicking a new destination cancels/replaces the previous walk.
+    await wc.executeJavaScript(`(() => {
+      const canvas=document.querySelector(".digi-street-frame canvas");
+      const rect=canvas.getBoundingClientRect();
+      const x=${walkedX};
+      canvas.dispatchEvent(new PointerEvent("pointerdown", {
+        bubbles:true,cancelable:true,pointerId:2,pointerType:"mouse",button:0,
+        clientX:rect.left+rect.width*(x/256),
+        clientY:rect.top+rect.height*(114/144),
+      }));
+    })()`);
+    await pause(300);
+    const stoppedX = await wc.executeJavaScript(spriteX);
+    await wc.executeJavaScript('window.dispatchEvent(new KeyboardEvent("keydown",{key:"d",bubbles:true}))');
     await pause(240);
-    const afterToolbarKey=await wc.executeJavaScript(spriteX);
-    assert.ok(afterToolbarKey!==null && Math.abs(afterToolbarKey-walkedX)<2,
-      "Keyboard keys outside the focused street must not move the player");
+    const afterKeyboard = await wc.executeJavaScript(spriteX);
+    assert.ok(stoppedX !== null && afterKeyboard !== null && Math.abs(stoppedX - afterKeyboard) < 1,
+      "Arrow/WASD keys must never steer the player, even if the scene has focus");
     await wc.executeJavaScript('window.dispatchEvent(new KeyboardEvent("keyup",{key:"d",bubbles:true}))');
 
     // The narrower layout is stacked rather than compressing input beneath text.
@@ -133,7 +152,7 @@ async function verifyDigiLayout(url, preload) {
     assert.ok(narrow.history.bottom <= narrow.action.top + 2, "Narrow history and actions must stack");
     assert.ok(narrow.action.width > 200, "Narrow terminal must remain usable");
 
-    return { desktop: "side-by-side", narrow: "stacked", suggestions: "contained" };
+    return { desktop: "side-by-side", narrow: "stacked", suggestions: "contained", movement: "point-and-click" };
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
