@@ -30,7 +30,7 @@ try {
   if (Test-Path -LiteralPath $oldData) {
     Move-Item -LiteralPath $oldData -Destination (Join-Path $engine "data")
   }
-  $executable = Join-Path $engine "Pre-Programmed.exe"
+  $executable = Join-Path $engine "digi.mn.exe"
   if (-not (Test-Path -LiteralPath $executable)) { throw "The replacement executable is missing." }
   if (-not $SkipRestart) { Start-Process -FilePath $executable -WorkingDirectory $engine }
   $success = $true
@@ -55,7 +55,7 @@ try {
   Add-Type -AssemblyName System.Windows.Forms
   [System.Windows.Forms.MessageBox]::Show(
     "The update could not be installed. Your original game files were kept if possible." + [Environment]::NewLine + [Environment]::NewLine + $message,
-    "Pre-Programmed update failed", "OK", "Error"
+    "digi.mn update failed", "OK", "Error"
   ) | Out-Null
   exit 1
 } finally {
