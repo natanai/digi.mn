@@ -1043,17 +1043,38 @@ export default function App() {
   }, authorToolGroups);
 
   const streetVisible = streetMode && !editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active;
-  return <main className={`dos-screen${streetVisible ? " digi-street-mode" : ""}`} aria-label="digi.mn narrative and town" onPointerDown={() => {
+  return <main className={`dos-screen digi-shell${streetVisible ? " digi-has-street" : " digi-text-only"}`} aria-label="digi.mn narrative and town" onPointerDown={() => {
     if (!radixPresentation.active && !typewriter.complete) typewriter.completeImmediately();
   }}>
-    <button type="button" className="digi-view-toggle" aria-pressed={streetMode} onPointerDown={(event) => event.stopPropagation()} onClick={() => setStreetMode((shown) => !shown)}>{streetMode ? "TEXT VIEW" : "STREET VIEW"}</button>
-    <div className="dos-terminal">
-      {streetVisible ? <StreetPlaySurface snapshot={snapshot} playState={playState} currentNodeId={currentNode.id} onChoose={(value) => {
-        if (!typewriter.complete) { typewriter.completeImmediately(); return; }
-        if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
-      }} /> : null}
-      {radixPresentation.surface}
-      <div
+    <header className="digi-header" onPointerDown={(event) => event.stopPropagation()}>
+      <span className="digi-brand" aria-label="digi.mn game engine">digi.mn</span>
+      <div className="digi-global-actions">
+        <button type="button" className="digi-view-toggle" aria-pressed={streetMode}
+          onClick={() => setStreetMode((shown) => !shown)}>{streetMode ? "TEXT VIEW" : "STREET VIEW"}</button>
+        <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} onNewGame={() => {
+              if (window.confirm("Start a new play session? This replaces the current autosave, but keeps the authored game and assets.")) startNewGame();
+            }} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active} onToggleAuthorView={() => {
+              setAuthorView((value) => !value);
+              authorTasks.closeAll();
+              setAuthorMessage("");
+            }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
+      </div>
+    </header>
+    <div className="dos-terminal digi-main">
+      {streetVisible ? <div className="digi-stage-slot">
+        <StreetPlaySurface snapshot={snapshot} playState={playState} currentNodeId={currentNode.id} onChoose={(value) => {
+          if (!typewriter.complete) { typewriter.completeImmediately(); return; }
+          if (!secondaryProsePending && !pendingDestinationNodeId) void handleTerminalValue(value);
+        }} />
+      </div> : null}
+      <div className="digi-radix-layer">{radixPresentation.surface}</div>
+      <div className="digi-work-region">
+        <section className="digi-narration-panel" aria-label="Narration and history">
+          <header className="digi-panel-heading">
+            <strong>NARRATION / HISTORY</strong>
+            <span>{authorExperience ? "AUTHOR SOURCES" : "READ ONLY"}</span>
+          </header>
+          <div
         ref={terminalHistoryRef}
         className="terminal-history"
         aria-live="polite"
@@ -1111,7 +1132,13 @@ export default function App() {
         </div>
       </div>
 
-      {!panel && !playerWorkspace && !pendingPlaySession && !radixPresentation.active ? <TerminalCommandComposer
+        </section>
+        <section className="digi-actions-panel" aria-label="Terminal and actions">
+          <header className="digi-panel-heading">
+            <strong>TERMINAL / ACTIONS</strong>
+            <span>{requestingKey ? "AUTHOR KEY" : "INTERACTIVE"}</span>
+          </header>
+          {!panel && !playerWorkspace && !pendingPlaySession && !radixPresentation.active ? <TerminalCommandComposer
         ref={terminalComposerRef}
         label={promptLabel}
         value={command}
@@ -1229,14 +1256,9 @@ export default function App() {
           onClose={() => setPlayerWorkspace(null)}
         />
       </div>
+        </section>
+      </div>
     </div>
-    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} onNewGame={() => {
-      if (window.confirm("Start a new play session? This replaces the current autosave, but keeps the authored game and assets.")) startNewGame();
-    }} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active} onToggleAuthorView={() => {
-      setAuthorView((value) => !value);
-      authorTasks.closeAll();
-      setAuthorMessage("");
-    }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => authorExperience && canEditAuthorSource(item.source)
       ? <button type="button" className="notification-edit-target" key={item.id} onClick={() => openAuthorSource(item.source)}>{item.text}</button>
       : <div key={item.id}>{item.text}</div>)}</div>
