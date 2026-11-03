@@ -60,11 +60,24 @@ jobs:
       - name: Verify canonical no-cloud runtime
         run: npm run verify:local
 
-      - name: Remove installation Media from portable build workspace
+      - name: Verify only curated demo cutaway Media is bundled
         shell: pwsh
         run: |
-          if (Test-Path public/assets) { Remove-Item public/assets -Recurse -Force }
-          New-Item -ItemType Directory -Path public/assets -Force | Out-Null
+          # No arbitrary Author installation assets belong in distributable builds.
+          # These four tracked files are intentional, replaceable game examples.
+          $expected = @(
+            "cutaways/alley-rescue.svg",
+            "cutaways/alley-rescue.svg.asset.json",
+            "cutaways/cleaner-briefing.svg",
+            "cutaways/cleaner-briefing.svg.asset.json"
+          ) | Sort-Object
+          $actual = @(Get-ChildItem public/assets -Recurse -File |
+            ForEach-Object { [System.IO.Path]::GetRelativePath((Resolve-Path public/assets).Path, $_.FullName).Replace('\\','/') } |
+            Sort-Object)
+          if (($actual -join "`n") -ne ($expected -join "`n")) {
+            $actual | ForEach-Object { Write-Host $_ }
+            throw "Unexpected Media in release build; only the two curated demo cutaways are permitted."
+          }
 
       - name: Build clean engine client
         run: npm run build
