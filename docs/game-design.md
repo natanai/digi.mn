@@ -66,6 +66,12 @@ Do **not** create a second parallel dialogue system, separate combat narrative e
 
 Pre-programmed's current Windows packaging, generic terminal-focused player shell, and historical audits should be evaluated before copying wholesale; do not treat unrelated infrastructure as a mandatory product requirement.
 
+## Art direction and replaceable cinematic stills
+
+A visual reference from *Digimon: The Movie* (2000) establishes a **late-1990s/early-2000s cel-animation aesthetic** for cinematic cutaways: confident outlines, economical cel shadows, painterly architecture, and clear emotional staging. Reinterpret the visual language with original characters and staging rather than copying movie frames or characters.
+
+The first prototype uses two deliberately temporary 16:9 stills, **Cleaner briefing** and **Alley rescue**. The former is triggered by accepting a bounty; the latter by an informed peaceful response. Both use existing Media `sprite` text cues, with stable file Media IDs so replacing SVG prototypes with higher-resolution game illustrations does not change Narrative conditions or outcomes. These cutaways are experiments in visual direction and **must not establish canon** for the Sapotama partner reveal or dictate final sprite designs.
+
 ## Current authored demo invariant
 
 The Windows first-run Cleaner scenario uses ordinary Narrative outcomes and State flags for investigation and case resolution. It demonstrates a locked-but-visible entrance, two possible clues for reaching the alley, a nonviolent conclusion unlocked through listening and observation, a separate paid conclusion, and returning home without a conventional quest log. This remains **fixed authored example content**, not procedural bounty composition. Existing authored projects are never silently replaced.
