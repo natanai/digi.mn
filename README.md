@@ -22,6 +22,12 @@ The initial Author key is `local` in `installation.txt`; change it if desired. Y
 
 **Not implemented yet:** procedural bounty/story generation, the permanent Cleaner hub, true district street-network generation, asset-backed sprite animation, nonviolent bounty completion validation, Sapotama partner reveal, and authored game content. Present buildings, character silhouettes, and district blocks are placeholders.
 
+## Sample mission continuity
+
+The Cleaner case demonstrates actual conditional decisions. Talking with the vendor or inspecting the crate reveals a route into the alley. Listening to the Digimon and examining its injured companion unlocks an informed, peaceful resolution; returning the supplies for pay is a distinct conclusion. All this uses ordinary State flags and Narrative effects.
+
+The revised story is installed **only for new, untouched local projects**. Upgrading an existing installation preserves its authored content, including the original sample story. To inspect the new sample, extract a separate fresh portable folder without copying old save data.
+
 ## Player layout (current preview)
 
 The game UI now has **three distinct regions**: a centered, pixel-perfect street viewport; a pale LCD-style narration/history panel; and a separate dark terminal/action panel. The log is readable and scrollable but not editable in player mode. In Author experience, authored lines can still expose their normal source-edit affordances.
