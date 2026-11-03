@@ -1,4 +1,5 @@
 import { nearbyStreetObject, streetHash, VIEW_HEIGHT, VIEW_WIDTH, type StreetPosition, type StreetScene } from "../scene";
+import { streetCamera } from "../pointer";
 
 const palette = ["#535c70", "#6b6574", "#596e6f", "#7f6a62", "#5a6272"];
 
@@ -8,10 +9,11 @@ export function renderStreet(
   player: StreetPosition,
   elapsed: number,
   moving: boolean,
+  target: StreetPosition | null = null,
 ) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
-  const camera = Math.max(0, Math.min(scene.width - VIEW_WIDTH, Math.round(player.x - 94)));
+  const camera = streetCamera(scene.width, player.x);
   ctx.fillStyle = "#9dabb4";
   ctx.fillRect(0, 0, VIEW_WIDTH, 85);
   ctx.fillStyle = "#6b7282";
@@ -85,6 +87,17 @@ export function renderStreet(
       ctx.fillStyle = "#49413c";
       ctx.fillRect(x - 1, y - 19, 3, 3);
     }
+  }
+  // A subtle destination marker makes click-to-walk legible without covering
+  // any character artwork or introducing an unrelated navigation widget.
+  if (target) {
+    const tx = Math.round(target.x - camera);
+    const ty = Math.round(target.y);
+    ctx.fillStyle = "#fff0a2";
+    ctx.fillRect(tx - 4, ty + 5, 9, 1);
+    ctx.fillRect(tx - 1, ty + 2, 3, 1);
+    ctx.fillStyle = "#5e5038";
+    ctx.fillRect(tx - 1, ty + 3, 3, 1);
   }
   // Placeholder pixel sprite: walking legs alternate; replace via repository Media sprite sheets.
   const px = Math.round(player.x - camera);
