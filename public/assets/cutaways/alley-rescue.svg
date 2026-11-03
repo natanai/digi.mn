@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Cleaner offers help to frightened creatures in a golden-hour alley">
+<defs>
+<linearGradient id="alley" x2="0" y2="1"><stop stop-color="#a39292"/><stop offset=".75" stop-color="#826d78"/><stop offset="1" stop-color="#514b5b"/></linearGradient>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#cda8c9"/><stop offset=".55" stop-color="#efba9d"/><stop offset="1" stop-color="#f5d49c"/></linearGradient>
+<linearGradient id="ground" x2="0" y2="1"><stop stop-color="#9f807e"/><stop offset="1" stop-color="#514a56"/></linearGradient>
+<pattern id="grain" width="11" height="11" patternUnits="userSpaceOnUse"><path fill="#fff" opacity=".08" d="M1 1h2v1H1zm7 5h2v1H8z"/></pattern>
+</defs>
+<path fill="url(#alley)" d="M0 0h960v540H0z"/>
+<path fill="url(#sky)" d="M720 0h240v414H720z"/>
+<path fill="#a88683" d="M753 106h118v287H753zm131-57h76v343h-76z"/>
+<path stroke="#725f66" stroke-width="7" d="M0 49h700v5H0zm0 30h625v5H0z"/>
+<path stroke="#473f4f" stroke-width="13" d="M34 0v183m0-103h345v-40m254-40v159"/>
+<path fill="#635f73" stroke="#312f40" stroke-width="6" d="M190 16h94v63h-94zM378 0h76v88h-76z"/>
+<path fill="#bca49c" d="M215 34h45v6h-45zm0 15h45v6h-45z"/>
+<path fill="#9b7a7d" stroke="#554c58" stroke-width="5" d="M0 109h188v265H0z"/>
+<path fill="#927270" stroke="#584c55" stroke-width="5" d="M750 228h210v177H750z"/>
+<path fill="#c38875" d="M784 255h48v109h-48zm63-12h52v122h-52z"/>
+<path fill="#755b63" d="M813 291h11v41h-11zm62-24h10v47h-10z"/>
+<path fill="#856a72" stroke="#53434e" stroke-width="4" d="M85 100h74v95H85z"/><path fill="#d8a37f" d="M93 110h58v75H93z"/>
+<path fill="#b88c8c" stroke="#514550" stroke-width="4" d="M460 67h83v105h-83z"/><path fill="#d5a18e" d="M470 78h62v84h-62z"/>
+<path fill="#f0d7bd" opacity=".45" d="M710 0h20v413h-20z"/>
+<path fill="url(#ground)" d="M0 355h960v185H0z"/>
+<path fill="#c9a18b" opacity=".26" d="M594 365l366 25v150H310z"/>
+<path fill="#807581" stroke="#403c4d" stroke-width="9" d="M20 296h277v158H20z"/>
+<path fill="#a88772" stroke="#53434c" stroke-width="7" d="M34 315h250v135H34z"/>
+<path stroke="#6c5249" stroke-width="9" d="M53 354h210m-210 41h210M94 325v117m96-117v117"/>
+<!-- open crate / scratched evidence -->
+<path fill="#d3a075" stroke="#604e4a" stroke-width="9" d="M36 285l107-135 179 37-36 130z"/>
+<path fill="#4c4145" d="M129 183l174 27-28 88-205-10z"/>
+<path stroke="#e1b28f" stroke-width="7" d="M184 206l-30 53m54-45-30 57m55-55-29 61"/>
+<path fill="#b97c76" opacity=".85" d="M0 434l252-13 100 119H0z"/>
+<path fill="#cbb7ab" d="M61 441l166 4 68 95H48z"/>
+<path fill="#e3d3bd" d="M130 461l174-28 22 107-154-8z"/>
+<!-- injured resting creature -->
+<path fill="#7c8d9c" stroke="#4c5266" stroke-width="7" d="M144 448q-27-36 20-67 68-29 128 18 15 59-30 73-75 13-118-24z"/>
+<path fill="#a6a8b3" d="M170 416q70-51 99 9-28 37-90 22z"/>
+<path fill="none" stroke="#42475c" stroke-width="4" d="M206 428q14 10 27 0"/><path stroke="#f5e7da" stroke-width="12" d="M225 459l40-1m-26-8 2 21"/>
+<!-- guardian -->
+<path fill="#cf9d70" stroke="#5a4651" stroke-width="8" d="M88 370q-38-58 16-100l20-49 45 43 68-20-17 51q38 58-8 103-83 32-124-28z"/>
+<path fill="#eadbc4" d="M111 307q38-29 74 6 27 43-7 64-66 20-87-31z"/>
+<path fill="#b4676e" stroke="#574351" stroke-width="7" d="M105 259l-32-48 70 36 28-33 18 37"/>
+<path fill="#222a3e" d="M152 311h11v14h-11z"/><path fill="none" stroke="#6b5360" stroke-width="5" d="M161 351q16 9 26-3"/>
+<!-- central protagonist -->
+<path fill="#343246" stroke="#242431" stroke-width="10" d="M468 428q54-74 171-62 81 2 131 73l-9 101H509z"/>
+<path fill="#d1a392" stroke="#403542" stroke-width="7" d="M533 237q-30-55 7-89 53-33 101 7 22 53-13 91l-57 35z"/>
+<path fill="#91667a" d="M632 166q13 52-17 87l-23-6 15-52z"/>
+<path fill="#a76e59" stroke="#433341" stroke-width="8" d="M519 215q-66-45-29-115 48-70 119-37 63 35 44 102-41-22-57 4-33 53-90 44z"/>
+<path fill="#d7a173" stroke="#4d3945" stroke-width="6" d="M538 170q-74-9-69 74 48-19 67-54 66 10 92-62 12-62-52-74-52 23-56 58 56-22 93-11-53 9-75 69z"/>
+<path fill="#e0b19a" stroke="#373240" stroke-width="7" d="M556 285q-51 1-84 40l-36 78 70 46 65-67 88 54 71-76-54-58-44-31z"/>
+<path fill="#3a3442" d="M567 297q47 25 77-2l9 86-106-10z"/>
+<path fill="#e5d4dc" fill-opacity=".6" stroke="#e5d8df" stroke-width="8" d="M552 289q-44-22-85 27l-37 113 70 41 75-66 94 68 67-78-67-110-56 25z"/>
+<path fill="#d3a38d" stroke="#493a45" stroke-width="7" d="M479 362q-40 1-79 20l-48 28-8 35q9 23 30 2l38-31 76-3z"/>
+<path fill="#f2d0a9" d="M350 417l-43 13-17 14 10 11 48-12z"/>
+<path stroke="#352e3e" stroke-width="5" d="M583 210q12-6 25 0"/><circle cx="601" cy="216" r="4" fill="#282637"/>
+<!-- companion's blue body, red-haired mantle -->
+<path fill="#9d2b57" stroke="#483248" stroke-width="8" d="M743 343q-6-90 69-111 79-8 93 82 35 62 4 105 46 47 18 116-39-18-47-50-5 49-66 56-35-56-29-110z"/>
+<path fill="#d83f69" d="M792 264q90-32 104 73-31-27-65-22 70 48 43 115-28-56-69-52z"/>
+<path fill="#42568c" stroke="#242d53" stroke-width="9" d="M733 383q5-69 66-80 69-14 82 53-6 66-55 83-72-3-93-56z"/>
+<path fill="#4d65a2" stroke="#252b53" stroke-width="7" d="M752 331l-1-57 47 29 28-48 20 62"/>
+<path fill="#d8d8e4" d="M760 348q28-15 38 5-8 21-31 17z"/><circle cx="783" cy="352" r="6" fill="#262b46"/>
+<path fill="#a5b3b6" stroke="#2c344e" stroke-width="5" d="M759 422l-17 35 32 2 17-25zm87-5-7 40 31-4 13-36"/>
+<!-- aid supplies -->
+<path fill="#9da6af" stroke="#4d4d62" stroke-width="6" d="M14 461h110v62H14z"/><path fill="#e9daca" d="M27 472h35v30H27z"/><path fill="#a2bacc" d="M80 476h30v27H80z"/>
+<path fill="url(#grain)" d="M0 0h960v540H0z"/>
+</svg>
