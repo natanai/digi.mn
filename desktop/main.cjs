@@ -584,7 +584,7 @@ async function checkAndInstallUpdate() {
       type: "question",
       title: "digi.mn update",
       message: "Update from v" + current + " to v" + release.version + "?",
-      detail: "digi.mn will download the official Windows release, verify it, and restart automatically. Your game, saves, Author key, and assets will be kept. This requires an internet connection and free disk space.",
+      detail: "digi.mn will download the official Windows release, verify its SHA-256 digest, and restart automatically. Your saved project, Author key, and assets will be kept. Save any unsaved Author edits before continuing. This requires an internet connection and free disk space.",
       buttons: ["Download and update", "Not now"],
       defaultId: 1,
       cancelId: 1,
