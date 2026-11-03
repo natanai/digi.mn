@@ -1,21 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { renderStreet } from "./ui/renderer";
 import { DistrictMap } from "./ui/DistrictMap";
 import type { DistrictLayout } from "./district";
-import { buildStreetScene, integerPixelScale, moveStreet, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
+import { buildStreetScene, integerPixelScale, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
+import { canvasStreetPoint, hitStreetObject, resolveStreetPointer, walkToStreetPoint, type StreetPointerTarget, streetCamera } from "./pointer";
 import "./street.css";
 
 const spawn = (): StreetPosition => ({ x: 56, y: 114 });
-const movementKeys: Record<string, { x: number; y: number }> = {
-  ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
-  ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 },
-  ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 },
-  ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
-};
-const isTyping = () => {
-  const element = document.activeElement;
-  return element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement || (element instanceof HTMLElement && element.isContentEditable);
-};
 
 export function StreetView({ seed, choices, onChoose, district, currentNodeId, visitedNodeIds }: {
   seed: string;
@@ -30,17 +21,24 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
   const canvas = useRef<HTMLCanvasElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const position = useRef<StreetPosition>(spawn());
-  const pressed = useRef(new Set<string>());
+  const destination = useRef<StreetPointerTarget | null>(null);
   const chooseRef = useRef(onChoose);
   chooseRef.current = onChoose;
-  const nearbyRef = useRef<ReturnType<typeof nearbyStreetObject>>(null);
-  const [nearbyLabel, setNearbyLabel] = useState("");
+  const [hint, setHint] = useState("");
   const [scale, setScale] = useState(1);
   const [mapOpen, setMapOpen] = useState(false);
   const mapOpenRef = useRef(false);
   mapOpenRef.current = mapOpen;
 
-  useEffect(() => { position.current = spawn(); pressed.current.clear(); setNearbyLabel(""); setMapOpen(false); }, [seed]);
+  // A new physical street resets motion. Narrative text changes within the
+  // same street do not teleport the player or restart their walking animation.
+  useEffect(() => {
+    position.current = spawn();
+    destination.current = null;
+    setHint("");
+    setMapOpen(false);
+  }, [seed]);
+
   useEffect(() => {
     const box = frame.current;
     if (!box) return;
@@ -49,64 +47,120 @@ export function StreetView({ seed, choices, onChoose, district, currentNodeId, v
     setScale(integerPixelScale(box.clientWidth, box.clientHeight));
     return () => observe.disconnect();
   }, []);
+
   useEffect(() => {
+    // Only Escape closes the overhead map. No keys steer the avatar, which keeps
+    // the Author/terminal keyboard interaction completely independent of motion.
     const keyDown = (event: KeyboardEvent) => {
-      if (mapOpenRef.current) { if (event.key === "Escape") { event.preventDefault(); setMapOpen(false); } return; }
-      // A spatial input should not hijack keys while the player reads history,
-      // operates menus, or uses the original terminal/Author UI.
-      if (document.activeElement !== frame.current || isTyping()
-        || event.altKey || event.ctrlKey || event.metaKey
-        || (event.repeat && event.key.toLowerCase() === "e")) return;
-      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-      if (movementKeys[key]) { event.preventDefault(); pressed.current.add(key); }
-      else if (key === "e" && nearbyRef.current) {
+      if (mapOpenRef.current && event.key === "Escape") {
         event.preventDefault();
-        chooseRef.current(nearbyRef.current.input);
+        setMapOpen(false);
       }
     };
-    const keyUp = (event: KeyboardEvent) => pressed.current.delete(event.key.length === 1 ? event.key.toLowerCase() : event.key);
-    const clear = () => pressed.current.clear();
     window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
-    window.addEventListener("blur", clear);
-    return () => { window.removeEventListener("keydown", keyDown); window.removeEventListener("keyup", keyUp); window.removeEventListener("blur", clear); };
+    return () => window.removeEventListener("keydown", keyDown);
   }, []);
+
   useEffect(() => {
     let frameId = 0;
     let previous = 0;
     const tick = (now: number) => {
       const delta = previous ? (now - previous) / 1000 : 0;
       previous = now;
-      let dx = 0; let dy = 0;
-      for (const key of pressed.current) { dx += movementKeys[key]?.x ?? 0; dy += movementKeys[key]?.y ?? 0; }
-      position.current = mapOpenRef.current ? position.current : moveStreet(position.current, { x: dx, y: dy }, delta, scene.width);
-      const nearby = nearbyStreetObject(position.current, scene.objects);
-      nearbyRef.current = nearby;
-      const label = nearby?.label ?? "";
-      setNearbyLabel((current) => current === label ? current : label);
+      let moving = false;
+      const intent = destination.current;
+      if (!mapOpenRef.current && intent) {
+        const target = intent.kind === "interact"
+          ? scene.objects.find((object) => object.id === intent.objectId)
+          : null;
+        if (intent.kind === "interact" && !target) {
+          // The authored interaction became unavailable after a narrative
+          // change. Never dispatch a stale input to the new Node.
+          destination.current = null;
+          setHint("");
+        } else if (intent.kind === "interact" && target
+          && nearbyStreetObject(position.current, [target], 20)) {
+          destination.current = null; // prevent duplicate responses
+          setHint("");
+          chooseRef.current(target.input);
+        } else {
+          const before = position.current;
+          const next = walkToStreetPoint(before, intent.position, delta, scene.width);
+          position.current = next.position;
+          moving = Math.hypot(next.position.x - before.x, next.position.y - before.y) > 0.01;
+          if (next.arrived && intent.kind === "walk") {
+            destination.current = null;
+            setHint("");
+          }
+        }
+      }
       const context = canvas.current?.getContext("2d");
-      if (context) renderStreet(context, scene, position.current, now, dx !== 0 || dy !== 0);
+      if (context) renderStreet(context, scene, position.current, now, moving, destination.current?.position ?? null);
       frameId = requestAnimationFrame(tick);
     };
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
   }, [scene]);
 
-  return <section className={`digi-street${mapOpen ? " digi-street-map-open" : ""}`} aria-label="Side-on town prototype">
-    <div className="digi-street-bar" onPointerDown={(event)=>event.stopPropagation()}>
+  const canvasPoint = (event: PointerEvent<HTMLCanvasElement>): StreetPosition | null =>
+    canvasStreetPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect());
+
+  const clickScene = (event: PointerEvent<HTMLCanvasElement>) => {
+    event.stopPropagation();
+    if (mapOpenRef.current || event.button !== 0) return;
+    const point = canvasPoint(event);
+    if (!point) return;
+    const target = resolveStreetPointer(point, scene, position.current);
+    if (!target) return;
+    destination.current = target; // a second click replaces any in-progress walk
+    const object = target.kind === "interact"
+      ? scene.objects.find((item) => item.id === target.objectId) : null;
+    setHint(object ? `Approaching: ${object.label}` : "Walking");
+  };
+
+  const hoverScene = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (mapOpenRef.current || destination.current) return;
+    const point = canvasPoint(event);
+    if (!point) return;
+    const target = hitStreetObject(point, scene, streetCamera(scene.width, position.current.x));
+    setHint((previous) => {
+      const label = target ? `Click to interact: ${target.label}` : "";
+      return previous === label ? previous : label;
+    });
+  };
+
+  const stopWalking = () => {
+    destination.current = null;
+    setHint("");
+  };
+
+  return <section className={`digi-street${mapOpen ? " digi-street-map-open" : ""}`} aria-label="Point-and-click town">
+    <div className="digi-street-bar" onPointerDown={(event) => event.stopPropagation()}>
       <strong>STREET</strong>
-      <span>FOCUS STREET · WASD / ARROWS · E</span>
-      <button type="button" aria-pressed={mapOpen} onClick={() => { pressed.current.clear(); setMapOpen((current)=>!current); }}>{mapOpen?"BACK TO STREET":"DISTRICT MAP"}</button>
+      <span>CLICK TO WALK · CLICK TO INTERACT</span>
+      <button type="button" aria-pressed={mapOpen} onClick={() => {
+        stopWalking();
+        setMapOpen((open) => !open);
+      }}>{mapOpen ? "BACK TO STREET" : "DISTRICT MAP"}</button>
     </div>
-    <div ref={frame} className="digi-street-frame" tabIndex={0} role="group" aria-label="Town movement controls. Focus the street to walk with arrows or WASD." aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown W A S D E" onBlur={() => pressed.current.clear()} onPointerDown={(event) => { event.stopPropagation(); frame.current?.focus(); }}>
+    <div ref={frame} className="digi-street-frame" role="group"
+      aria-label="Point-and-click town scene. Click ground to walk or a character, object, or door to approach and interact. The terminal offers the same interactions.">
       <canvas ref={canvas} width={VIEW_WIDTH} height={VIEW_HEIGHT}
         style={{ width: VIEW_WIDTH * scale, height: VIEW_HEIGHT * scale }}
-        aria-label="Pixel-art town, controlled with arrows or WASD" role="img" />
+        onPointerDown={clickScene} onPointerMove={hoverScene}
+        onPointerLeave={() => { if (!destination.current) setHint(""); }}
+        aria-label="Pixel-art point-and-click town" role="img" />
     </div>
     {mapOpen ? <DistrictMap district={district} currentNodeId={currentNodeId} visitedNodeIds={visitedNodeIds} /> : null}
     <div className="digi-street-caption" onPointerDown={(event) => event.stopPropagation()}>
-      {mapOpen ? <span>Map is informational. Enter buildings using the street interaction.</span> : nearbyLabel ? <button type="button" onClick={() => nearbyRef.current && chooseRef.current(nearbyRef.current.input)}>[E] {nearbyLabel}</button>
-        : <span>{scene.objects.length ? "Click the street to move, then approach a person, object, or entrance." : "Author a street placement on a node interaction to populate this scene."}</span>}
+      {mapOpen ? <span>The map is informational; use doors in the street to travel.</span>
+        : destination.current ? <>
+          <span>{hint || "Walking"}</span>
+          <button type="button" onClick={stopWalking}>CANCEL</button>
+        </>
+        : <span>{hint || (scene.objects.length
+          ? "Click the ground to walk, or click a person, object, or entrance to interact."
+          : "Add authored street placements to populate this scene.")}</span>}
     </div>
   </section>;
 }
