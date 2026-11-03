@@ -1044,7 +1044,10 @@ export default function App() {
 
   const inventoryInViewport = playerWorkspace?.feature === "inventory"
     && playerWorkspace.workspace === "inventory" && streetMode;
-  const streetVisible = streetMode && !editorOpen
+  // A desktop Author task occupies the existing left dock. Keep the actual
+  // world mounted and visible beside it so edits can be made in context,
+  // without resetting the actor position or walking animation.
+  const streetVisible = streetMode && (!editorOpen || authorExperience)
     && (!playerWorkspaceOpen || inventoryInViewport)
     && !pendingPlaySession && !radixPresentation.active;
   const demoCaseAvailable = snapshot.interactions.some((interaction) =>
