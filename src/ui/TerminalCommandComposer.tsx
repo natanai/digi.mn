@@ -33,6 +33,8 @@ type TerminalCommandComposerProps = {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
+  /** Opt-in for point-and-click clients: selecting an authored action executes it. */
+  submitOnChoiceSelect?: boolean;
   secret?: boolean;
   immediateChoices?: TerminalCommandChoice[];
   menuChoices?: TerminalCommandChoice[];
@@ -73,6 +75,7 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     value,
     onChange,
     onSubmit,
+    submitOnChoiceSelect = false,
     secret = false,
     immediateChoices = [],
     menuChoices = [],
@@ -270,9 +273,15 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
 
     const insertChoice = (choice: TerminalCommandChoice) => {
       const next = normalizeTerminalDraft(choice.text);
-      onChange(next);
       setMenuOpen(false);
       setMenuHelpOpen(false);
+      if (submitOnChoiceSelect && !secret) {
+        // Submit the chosen value directly. Waiting for onChange to propagate
+        // would submit the previous typed text on this same React event.
+        onSubmit(next);
+        return;
+      }
+      onChange(next);
       window.requestAnimationFrame(() => {
         const current = field();
         if (!current) return;
