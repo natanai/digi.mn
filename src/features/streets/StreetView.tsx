@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { renderStreet } from "./ui/renderer";
+import { loadStreetActorArt, type StreetActorArt } from "./ui/actorSprites";
 import { DistrictMap } from "./ui/DistrictMap";
 import type { DistrictLayout } from "./district";
-import { buildStreetScene, integerPixelScale, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
+import { buildStreetScene, integerPixelScale, moveStreet, nearbyStreetObject, VIEW_HEIGHT, VIEW_WIDTH, type StreetChoice, type StreetPosition } from "./scene";
 import { canvasStreetPoint, hitStreetObject, resolveStreetPointer, walkToStreetPoint, type StreetPointerTarget, streetCamera } from "./pointer";
 import "./street.css";
 
@@ -22,6 +23,10 @@ export function StreetView({ seed, choices, onChoose, canChoose, district, curre
   const canvas = useRef<HTMLCanvasElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const position = useRef<StreetPosition>(spawn());
+  const companion = useRef<StreetPosition>({ x: 23, y: 117 });
+  const facing = useRef<-1 | 1>(1);
+  const lastPlayerX = useRef(spawn().x);
+  const actorArt = useRef<StreetActorArt | null>(null);
   const destination = useRef<StreetPointerTarget | null>(null);
   const chooseRef = useRef(onChoose);
   chooseRef.current = onChoose;
@@ -32,10 +37,24 @@ export function StreetView({ seed, choices, onChoose, canChoose, district, curre
   const mapOpenRef = useRef(false);
   mapOpenRef.current = mapOpen;
 
+  // Load actual four-frame PNG atlases from the game's public asset directory.
+  // The portable host resolves these URLs to install-local assets first, then
+  // falls back to bundled artwork, so replacements need no rebuild.
+  useEffect(() => {
+    let active = true;
+    void loadStreetActorArt().then((loaded) => {
+      if (active) actorArt.current = loaded;
+    });
+    return () => { active = false; };
+  }, []);
+
   // A new physical street resets motion. Narrative text changes within the
   // same street do not teleport the player or restart their walking animation.
   useEffect(() => {
     position.current = spawn();
+    companion.current = { x: 23, y: 117 };
+    facing.current = 1;
+    lastPlayerX.current = spawn().x;
     destination.current = null;
     setHint("");
     setHoverTarget(false);
@@ -103,8 +122,31 @@ export function StreetView({ seed, choices, onChoose, canChoose, district, curre
           }
         }
       }
+      // Companionship is currently a visual follow effect, not autonomous AI.
+      // Keep the partner behind the direction of travel at a readable distance.
+      if (moving && Math.abs(position.current.x - companion.current.x) > 0.5) {
+        // Direction follows the player's own last movement, not the partner.
+        facing.current = position.current.x > lastPlayerX.current ? 1 : -1;
+      }
+      lastPlayerX.current = position.current.x;
+      const follow = {
+        x: position.current.x - facing.current * 32,
+        y: Math.min(129, position.current.y + 3),
+      };
+      const companionBefore = companion.current;
+      const companionNext = moveStreet(companionBefore, {
+        x: follow.x - companionBefore.x,
+        y: follow.y - companionBefore.y,
+      }, delta * 0.9, scene.width);
+      companion.current = companionNext;
+      const companionMoving = Math.hypot(
+        companionNext.x - companionBefore.x, companionNext.y - companionBefore.y,
+      ) > 0.03;
       const context = canvas.current?.getContext("2d");
-      if (context) renderStreet(context, scene, position.current, now, moving, destination.current?.position ?? null);
+      if (context) renderStreet(
+        context, scene, position.current, now, moving, destination.current?.position ?? null,
+        actorArt.current, companion.current, facing.current, companionMoving,
+      );
       frameId = requestAnimationFrame(tick);
     };
     frameId = requestAnimationFrame(tick);
