@@ -6,10 +6,10 @@ const base = {
   draft: false,
   prerelease: false,
   assets: [{
-    name: "Pre-Programmed-v0.1.12-windows-x64.zip",
+    name: "digi.mn-v0.1.12-windows-x64.zip",
     size: 213516081,
     digest: "sha256:" + "a".repeat(64),
-    browser_download_url: "https://github.com/natanai/pre-programmed/releases/download/v0.1.12/Pre-Programmed-v0.1.12-windows-x64.zip",
+    browser_download_url: "https://github.com/natanai/digi.mn/releases/download/v0.1.12/digi.mn-v0.1.12-windows-x64.zip",
   }],
 };
 test("only strictly newer stable versions update", () => {
