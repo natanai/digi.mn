@@ -20,7 +20,10 @@ extraResources:
     to: asset-manifest-lib.mjs
   - from: apply-update.ps1
     to: apply-update.ps1
+  - from: build/icon.png
+    to: app-icon.png
 win:
+  icon: build/icon.ico
   target:
     - target: portable
       arch:

@@ -89,6 +89,18 @@ jobs:
             throw "Unexpected Media in release build; only the two curated demo cutaways are permitted."
           }
 
+      - name: Generate canonical white-square browser and Windows icons
+        shell: pwsh
+        run: |
+          node scripts/generate-brand-assets.mjs
+          New-Item -ItemType Directory -Path "desktop/build" -Force | Out-Null
+          Copy-Item "public/favicon.ico" "desktop/build/icon.ico" -Force
+          Copy-Item "public/icon-192.png" "desktop/build/icon.png" -Force
+          $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path "desktop/build/icon.ico").Path)
+          if ([BitConverter]::ToUInt16($bytes, 4) -ne 4 -or $bytes[54] -ne 0) {
+            throw "Windows EXE icon must contain 16, 32, 48, and 256 pixel sizes."
+          }
+
       - name: Build clean engine client
         run: npm run build
         env:
@@ -163,10 +175,19 @@ jobs:
           Copy-Item "desktop/installation-template.txt" (Join-Path $appRoot "installation.txt")
           New-Item -ItemType Directory -Path (Join-Path $appRoot "assets") -Force | Out-Null
 
+          # Keep required Chromium files untouched inside _engine, but provide one
+          # obvious launch icon at the portable folder root.
+          $link = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $appRoot "digi.mn.lnk"))
+          $link.TargetPath = Join-Path $engineRoot "digi.mn.exe"
+          $link.IconLocation = (Join-Path $engineRoot "digi.mn.exe") + ",0"
+          $link.Description = "Launch digi.mn"
+          $link.Save()
+
           if (-not (Test-Path (Join-Path $engineRoot "digi.mn.exe"))) {
             throw "Contained Electron runtime did not contain its executable."
           }
           if (-not (Test-Path (Join-Path $engineRoot "resources/apply-update.ps1"))) { throw "Runtime did not package the Windows update helper." }
+          if (-not (Test-Path (Join-Path $engineRoot "resources/app-icon.png"))) { throw "Runtime did not package the window icon." }
           "stage_root=$stageRoot" >> $env:GITHUB_OUTPUT
           "app_root=$appRoot" >> $env:GITHUB_OUTPUT
           "engine_root=$engineRoot" >> $env:GITHUB_OUTPUT
@@ -217,7 +238,7 @@ jobs:
           APP_ROOT: ${{ steps.stage.outputs.app_root }}
           ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
         run: |
-          foreach ($required in @("installation.txt", "assets", "_engine")) {
+          foreach ($required in @("digi.mn.lnk", "installation.txt", "assets", "_engine")) {
             if (-not (Test-Path (Join-Path $env:APP_ROOT $required))) {
               throw "Portable folder is missing required entry: $required"
             }
@@ -229,11 +250,11 @@ jobs:
           }
 
           $rootEntries = @(Get-ChildItem $env:APP_ROOT -Force | ForEach-Object Name | Sort-Object)
-          $expectedRoot = @("_engine", "assets", "installation.txt") | Sort-Object
+          $expectedRoot = @("_engine", "assets", "digi.mn.lnk", "installation.txt") | Sort-Object
           if (($rootEntries -join "`n") -ne ($expectedRoot -join "`n")) {
             Write-Host "Unexpected portable root entries:"
             $rootEntries | ForEach-Object { Write-Host $_ }
-            throw "Portable root must expose only installation.txt, assets, and _engine."
+            throw "Portable root must expose only the shortcut, installation.txt, assets, and _engine."
           }
 
           $installationLines = @(Get-Content (Join-Path $env:APP_ROOT "installation.txt"))
@@ -290,6 +311,7 @@ jobs:
           foreach ($required in @(
             "digi.mn/installation.txt",
             "digi.mn/assets/",
+            "digi.mn/digi.mn.lnk",
             "digi.mn/_engine/digi.mn.exe",
             "digi.mn/_engine/README.txt"
           )) {

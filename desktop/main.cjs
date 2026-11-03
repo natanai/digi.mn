@@ -658,12 +658,14 @@ function installSaveAsDownloads(window) {
 async function createWindow() {
   portableHost = await startLocalHost();
   const { url, assetWarning } = portableHost;
+  const iconPath = app.isPackaged ? resourcePath("app-icon.png") : path.resolve(__dirname, "build/icon.png");
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
     minWidth: 360,
     minHeight: 540,
     backgroundColor: "#000000",
+    icon: existsSync(iconPath) ? iconPath : undefined,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
@@ -684,6 +686,8 @@ async function createWindow() {
   }
   for (const project of waitingProjectFiles.splice(0)) queueDroppedProject(project);
 }
+
+if (process.platform === "win32") app.setAppUserModelId("mn.digi.engine");
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

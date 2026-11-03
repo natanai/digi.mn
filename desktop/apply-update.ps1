@@ -32,6 +32,17 @@ try {
   }
   $executable = Join-Path $engine "digi.mn.exe"
   if (-not (Test-Path -LiteralPath $executable)) { throw "The replacement executable is missing." }
+  # The launcher is a convenience, not part of game data or the updater's critical path.
+  # Regenerate it with the user's actual folder path after swapping the runtime.
+  try {
+    $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $Root "digi.mn.lnk"))
+    $shortcut.TargetPath = $executable
+    $shortcut.IconLocation = "$executable,0"
+    $shortcut.Description = "Launch digi.mn"
+    $shortcut.Save()
+  } catch {
+    Write-Warning ("Could not create the optional digi.mn shortcut: " + $_.Exception.Message)
+  }
   if (-not $SkipRestart) { Start-Process -FilePath $executable -WorkingDirectory $engine }
   $success = $true
 } catch {

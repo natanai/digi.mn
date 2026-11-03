@@ -46,12 +46,12 @@ function squareInk(x, y, size, centerX = size / 2, centerY = size / 2) {
     (dx >= side / 2 - stroke / 2 || dy >= side / 2 - stroke / 2);
 }
 const icons = new Map();
-for (const size of [16, 32, 48, 180, 192, 512]) {
+for (const size of [16, 32, 48, 180, 192, 256, 512]) {
   const data = png(size, size, (x, y) => squareInk(x, y, size));
   icons.set(size, data);
   if ([180, 192, 512].includes(size)) await writeFile(root + "icon-" + size + ".png", data);
 }
-const entries = [16, 32, 48].map(size => ({ size, data: icons.get(size) }));
+const entries = [16, 32, 48, 256].map(size => ({ size, data: icons.get(size) }));
 const icoHeader = Buffer.alloc(6 + entries.length * 16);
 icoHeader.writeUInt16LE(1, 2);
 icoHeader.writeUInt16LE(entries.length, 4);
@@ -59,8 +59,8 @@ let offset = icoHeader.length;
 for (let i = 0; i < entries.length; i++) {
   const { size, data } = entries[i];
   const j = 6 + i * 16;
-  icoHeader[j] = size;
-  icoHeader[j + 1] = size;
+  icoHeader[j] = size === 256 ? 0 : size;
+  icoHeader[j + 1] = size === 256 ? 0 : size;
   icoHeader[j + 2] = 0;
   icoHeader[j + 3] = 0;
   icoHeader.writeUInt16LE(1, j + 4);

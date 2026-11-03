@@ -8,7 +8,8 @@ overhead district overview, and different ways of resolving a bounty.
 
 FIRST LAUNCH
 1. Extract the entire digi.mn folder from this ZIP. Do not run inside the ZIP.
-2. Run _engine\\digi.mn.exe. Everything needed is inside this folder.
+2. Double-click digi.mn in the main folder (Windows shortcut). You can also
+   run _engine\\digi.mn.exe directly. Everything needed is inside this folder.
 3. Select the first-run start button if shown. Follow the short Cleaner story.
 4. Click ground in the street to walk there. Click a person, object, or
    doorway to automatically walk up and interact. Clicking again reroutes
@@ -71,6 +72,7 @@ The same authored cues will resolve to your replacement art automatically.
 The included full-resolution PNGs are for your own repainting and tracing.
 
 YOUR FILES
+- digi.mn (shortcut): convenient launcher; it opens the real _engine\\digi.mn.exe.
 - _engine/data: game database, Electron settings, cache. Keep this folder safe.
 - assets: art and audio files for the authored game.
 - installation.txt: your local Author key and initial start-button wording.
