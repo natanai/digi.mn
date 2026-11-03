@@ -4,7 +4,7 @@ A text-led, 2D pixel-art Digimon fan game set in the *Digimon Beatbreak* univers
 
 ## Windows preview
 
-**[Download digi.mn v0.1.0-preview.19 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.19)**
+**[Download digi.mn v0.1.0-preview.21 for Windows 11](https://github.com/natanai/digi.mn/releases/tag/v0.1.0-preview.21)**
 
 This preview includes **Cleaner and red-maned Digimon sprites in the actual street**, point-and-click exploration, the restored monochrome pre-programmed visual language, a full-height history column on the left, one-click terminal suggestions, and authored cinematic cutaways. The early sprite sheets use a consistent pose and subtle walking motion until properly registered frame animations are drawn. Preview versions support in-app updates from v0.1.0-preview.5 onward. Earlier preview clients only check stable releases; they cannot discover the newer previews. The release is a fully contained, unsigned, portable ZIP. Extract it and run `digi.mn/_engine/digi.mn.exe` (do not run it inside the archive). On a brand-new installation, an editable Cleaner demo is created automatically from the real Narrative engine. You can accept a bounty, explore placeholder pixel-art streets, inspect the overhead map, investigate, and resolve the case with or without a payout before returning home.
 
@@ -17,6 +17,14 @@ The initial Author key is `local` in `installation.txt`; change it if desired. Y
 The desktop now has a full-height scrolling history on the left, with recent narration kept near the terminal's vertical reading level; the street and actions occupy the right column. Colors, text, borders and controls use the original pre-programmed monochrome VGA visual language rather than a separate LCD theme. Selecting a terminal suggestion submits the command immediately. The character and companion no longer flicker through inconsistent prototype sprite frames, and the companion stops moving once it catches up.
 
 The authored **Cleaner briefing** and **Alley rescue** cutaways use the existing Media runtime, with a fixed shared-engine text compiler so their cue IDs survive notation parsing. You can also use **[VIEW CUTAWAY]** in the street header to preview art explicitly. The stock scene's **Inventory** opens as a contained player workspace over the game viewport, leaving history and actions accessible; the packaged Windows acceptance test checks this using the actual `inv` command and measures the overlay geometry.
+
+## Author mode: edit the running street (early implementation)
+
+Use `admin` in the game terminal and sign in with your installation's Author key (`local` on a new preview). While Author mode is active, the street header exposes **[EDIT SCENE]**. Select it to inspect the *actual played street* without triggering its actions: click a person, object or entrance to open its canonical Narrative Interaction editor; click empty scenery or pavement to open the existing Street Layout workspace. That workspace supports adding a new street interaction, placing existing interactions, dragging markers or using their keyboard coordinates, and committing positions through the normal Author Save. **[PLAY SCENE]** returns to ordinary point-and-click interactions.
+
+On Windows desktop, opening a scene Author task now keeps the game viewport mounted beside the existing Author dock so the editor and game remain in context. Changes remain subject to the existing Author dirty-draft, Save and conflict handling rather than becoming a separate scene save system.
+
+**Important limit:** this is not yet fully visual game authoring. The prototype's procedural buildings/road style, actor sprite selection and animation settings, district-map rendering, and most player-facing GUI layout are still code defaults rather than project data. Moving those into the authoritative World/Media/scene presentation contracts is the next milestone; the requirement is recorded in [docs/game-design.md](docs/game-design.md). Assets may continue to be supplied manually in the portable `assets/` folder.
 
 ## Development status
 
