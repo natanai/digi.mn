@@ -14,7 +14,7 @@ const ASSET_LIMIT = 600 * 1024 * 1024;
 const USER_AGENT = "digi.mn-Windows-Portability";
 
 function parseVersion(value) {
-  const match = /^v?(\\d+)\\.(\\d+)\\.(\\d+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$/.exec(value ?? "");
+  const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(value ?? "");
   if (!match) return null;
   return {
     core: match.slice(1, 4).map(Number),
@@ -35,7 +35,7 @@ function compareVersions(left, right) {
   for (let i = 0; i < Math.min(a.prerelease.length, b.prerelease.length); i++) {
     const x = a.prerelease[i], y = b.prerelease[i];
     if (x === y) continue;
-    const xNum = /^\\d+$/.test(x), yNum = /^\\d+$/.test(y);
+    const xNum = /^\d+$/.test(x), yNum = /^\d+$/.test(y);
     if (xNum && yNum) {
       const xInt = BigInt(x), yInt = BigInt(y);
       return xInt > yInt ? 1 : -1;
