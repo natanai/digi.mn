@@ -325,6 +325,18 @@ async function runSelfTest() {
     }
   }
 
+  // The actual packed game must serve both imported actor atlases.
+  for (const [name, width, height] of [
+    ["cleaner-walk.png", 120, 52], ["partner-walk.png", 168, 30],
+  ]) {
+    const response = await fetch(new URL("assets/sprites/" + name, url), { cache: "no-store" });
+    const data = Buffer.from(await response.arrayBuffer());
+    if (!response.ok || !response.headers.get("content-type")?.includes("image/png")
+      || data.length < 24 || data.readUInt32BE(16) !== width || data.readUInt32BE(20) !== height) {
+      throw new Error("Bundled pixel sprite atlas missing or corrupted: " + name);
+    }
+  }
+
   const healthResponse = await fetch(new URL("api/health", url), { cache: "no-store" });
   const health = await healthResponse.json();
   if (!healthResponse.ok || health?.ok !== true || health?.authorConfigured !== true
