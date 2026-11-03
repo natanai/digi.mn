@@ -15,6 +15,7 @@ export function renderStreet(
   companion: StreetPosition | null = null,
   facing: -1 | 1 = 1,
   companionMoving = false,
+  editing = false,
 ) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
@@ -85,6 +86,14 @@ export function renderStreet(
       ctx.fillStyle = "#353843";
       ctx.fillRect(x - 7, y - 1, 3, 4);
       ctx.fillRect(x + 4, y - 1, 3, 4);
+    }
+    // The actual scene doubles as an Author inspection surface. Show a
+    // compact selection outline, but leave the world and gameplay state alone.
+    if (editing) {
+      ctx.strokeStyle = "#f0e8d8";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - 12, object.kind === "entrance" ? 67 : y - 25,
+        24, object.kind === "entrance" ? 42 : 30);
     }
     if (nearbyStreetObject(player, [object], 29)) {
       ctx.fillStyle = "#fff2ad";
