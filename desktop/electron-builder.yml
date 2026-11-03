@@ -6,6 +6,7 @@ directories:
 files:
   - main.cjs
   - preview-demo.cjs
+  - digi-layout-selftest.cjs
   - project-drop.cjs
   - updater.cjs
   - preload.cjs
