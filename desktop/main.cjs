@@ -698,7 +698,9 @@ if (!app.requestSingleInstanceLock()) {
     app.exit(1);
   });
 
-  app.on("window-all-closed", () => app.quit());
+  // The self-test creates and disposes of a hidden BrowserWindow before the
+  // API persistence checks finish. Closing it must not terminate its Worker.
+  app.on("window-all-closed", () => { if (!process.argv.includes("--self-test")) app.quit(); });
   app.on("before-quit", (event) => {
     if (quitting) return;
     event.preventDefault();
