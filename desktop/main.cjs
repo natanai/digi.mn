@@ -1,6 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 const { createServer } = require("node:http");
-const { mkdir, readFile, stat, unlink, writeFile } = require("node:fs/promises");
+const { mkdir, readFile, rm, stat, unlink, writeFile } = require("node:fs/promises");
 const { createReadStream, existsSync, mkdirSync, renameSync } = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -595,46 +595,125 @@ function queueDroppedProject(filename) {
 }
 
 
+function publishUpdateStatus(status) {
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
+    mainWindow.webContents.send("pre-programmed:update-status", status);
+  }
+}
+
 async function checkAndInstallUpdate() {
   if (!app.isPackaged || process.platform !== "win32") return { message: "Updates are available in the packaged Windows app only." };
   if (updateInProgress) return { message: "An update is already being prepared." };
   updateInProgress = true;
+  let staged = null;
   try {
+    publishUpdateStatus({ phase: "checking", message: "Checking GitHub for updates..." });
     const current = app.getVersion();
     const release = await findUpdate(current);
-    if (!release) return { message: "digi.mn " + current + " is already up to date." };
+    if (!release) {
+      const message = "digi.mn v" + current + " is already up to date.";
+      publishUpdateStatus({ phase: "up-to-date", message });
+      return { message };
+    }
+    publishUpdateStatus({
+      phase: "available", version: release.version,
+      message: "Update v" + release.version + " is available. Confirm in the Windows dialog.",
+    });
     const choice = await dialog.showMessageBox(mainWindow, {
       type: "question",
       title: "digi.mn update",
       message: "Update from v" + current + " to v" + release.version + "?",
-      detail: "digi.mn will download the official Windows release, verify its SHA-256 digest, and restart automatically. Your saved project, Author key, and assets will be kept. Save any unsaved Author edits before continuing. This requires an internet connection and free disk space.",
+      detail: "digi.mn will download and verify the official Windows release. When ready, it will close briefly to install the update, then reopen automatically. A confirmation will appear in the new version. Your saved project, Author key, and assets will be kept. Save unsaved Author edits first.",
       buttons: ["Download and update", "Not now"],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
     });
-    if (choice.response !== 0) return { message: "Update cancelled." };
+    if (choice.response !== 0) {
+      publishUpdateStatus({ phase: "cancelled", message: "Update cancelled. No files changed." });
+      return { message: "Update cancelled." };
+    }
     const root = configuredPortableRoot;
-    if (mainWindow) mainWindow.setProgressBar(0);
-    const staged = await stageUpdate({
+    let lastPercent = -1;
+    publishUpdateStatus({ phase: "downloading", version: release.version, percent: 0, message: "Downloading v" + release.version + "... 0%" });
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(0);
+    const phaseMessages = {
+      verifying: "Download complete. Verifying SHA-256 integrity...",
+      extracting: "Download verified. Extracting files...",
+      preparing: "Preparing verified update for installation...",
+    };
+    staged = await stageUpdate({
       release, root, scriptSource: resourcePath("apply-update.ps1"),
       onProgress: (currentBytes, totalBytes) => {
-        if (mainWindow && totalBytes > 0) mainWindow.setProgressBar(Math.max(0, Math.min(1, currentBytes / totalBytes)));
+        if (totalBytes <= 0) return;
+        const percent = Math.max(0, Math.min(100, Math.floor(currentBytes / totalBytes * 100)));
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(percent / 100);
+        if (percent !== lastPercent) {
+          lastPercent = percent;
+          publishUpdateStatus({
+            phase: "downloading", version: release.version, percent,
+            message: "Downloading v" + release.version + "... " + percent + "%",
+          });
+        }
+      },
+      onPhase: (phase) => {
+        publishUpdateStatus({ phase, version: release.version, message: phaseMessages[phase] });
       },
     });
-    if (mainWindow) mainWindow.setProgressBar(-1);
-    applyAfterExit({ root, ...staged, parentPid: process.pid });
-    // The helper waits for the Electron/Miniflare process to close before it
-    // replaces the engine and transfers the existing local data directory.
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(-1);
+    publishUpdateStatus({
+      phase: "restarting", version: release.version,
+      message: "Download verified and prepared. digi.mn will now close, install v" + release.version +
+        ", and reopen. Installation is not complete until the new version starts.",
+    });
+    // Allow the renderer to paint this final explanation before exiting.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await applyAfterExit({ root, ...staged, parentPid: process.pid, version: release.version });
+    // The detached helper waits for Electron to exit, swaps the engine, moves
+    // local data, and restarts. Only the new process confirms completion.
     app.quit();
-    return { message: "Installing v" + release.version + " and restarting..." };
+    return { message: "Installing v" + release.version + ". The app will reopen automatically." };
   } catch (error) {
-    dialog.showErrorBox("Update not installed", error instanceof Error ? error.message : String(error));
-    return { message: "Update failed. No existing game files were intentionally replaced." };
+    if (staged) {
+      await Promise.all([
+        rm(staged.next, { recursive: true, force: true }).catch(() => {}),
+        rm(staged.tmp, { recursive: true, force: true }).catch(() => {}),
+      ]);
+    }
+    const detail = error instanceof Error ? error.message : String(error);
+    publishUpdateStatus({ phase: "failed", message: "Update failed: " + detail });
+    dialog.showErrorBox("Update not installed", detail);
+    return { message: "Update failed: " + detail };
   } finally {
-    if (mainWindow) mainWindow.setProgressBar(-1);
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setProgressBar(-1);
     updateInProgress = false;
   }
+}
+
+async function reportCompletedUpdate() {
+  const receipt = path.join(configuredPortableRoot, ".last-installed-update");
+  let installedVersion;
+  try {
+    installedVersion = (await readFile(receipt, "utf8")).trim();
+  } catch (error) {
+    if (error?.code !== "ENOENT") console.error("Could not read update receipt", error);
+    return;
+  }
+  // A failed update or rollback must never be reported as successful.
+  if (installedVersion !== app.getVersion()) {
+    await unlink(receipt).catch(() => {});
+    return;
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  await dialog.showMessageBox(mainWindow, {
+    type: "info",
+    title: "digi.mn update complete",
+    message: "digi.mn v" + installedVersion + " is installed.",
+    detail: "The update succeeded. Your saved game and assets are still in their existing folders.",
+    buttons: ["OK"],
+    noLink: true,
+  });
+  await unlink(receipt).catch((error) => console.error("Could not clear update receipt", error));
 }
 
 ipcMain.handle("pre-programmed:app-version", () => app.getVersion());
@@ -674,6 +753,7 @@ async function createWindow() {
   });
   installSaveAsDownloads(mainWindow);
   await mainWindow.loadURL(url);
+  await reportCompletedUpdate();
   if (assetWarning) {
     dialog.showMessageBox(mainWindow, {
       type: "warning",
