@@ -10,9 +10,10 @@ FIRST LAUNCH
 1. Extract the entire digi.mn folder from this ZIP. Do not run inside the ZIP.
 2. Run _engine\\digi.mn.exe. Everything needed is inside this folder.
 3. Select the first-run start button if shown. Follow the short Cleaner story.
-4. For movement: click the street panel to focus it, then use WASD or arrows.
-   Press E when near a person, object, or doorway. Click DISTRICT MAP to
-   inspect the connected streets, then BACK TO STREET to continue.
+4. Click ground in the street to walk there. Click a person, object, or
+   doorway to automatically walk up and interact. Clicking again reroutes
+   the character. Click DISTRICT MAP to inspect connected streets, then
+   BACK TO STREET to continue. No movement keys are required.
 5. TEXT VIEW switches off the graphical panel, exposing the original text UI.
 6. To edit the example, type 'admin' in the terminal, then enter the Author
    key from installation.txt (default: local).
