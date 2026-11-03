@@ -37,6 +37,23 @@ const describeLayout = `(() => {
 const noOverlap = (a,b) => a && b &&
   (a.right <= b.left + 1 || b.right <= a.left + 1 ||
    a.bottom <= b.top + 1 || b.bottom <= a.top + 1);
+const spriteX = `(() => {
+  const canvas=document.querySelector(".digi-street-frame canvas");
+  if(!canvas) return null;
+  const ctx=canvas.getContext("2d");
+  if(!ctx) return null;
+  const image=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  let xSum=0, count=0;
+  // Placeholder Cleaner sprite head uses #cfa388; the scene does not.
+  for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++){
+    const i=(y*canvas.width+x)*4;
+    if(image[i]===207 && image[i+1]===163 && image[i+2]===136 && image[i+3]===255){
+      xSum+=x;
+      count++;
+    }
+  }
+  return count ? xSum/count : null;
+})()`;
 
 async function verifyDigiLayout(url, preload) {
   const win = new BrowserWindow({
@@ -91,6 +108,21 @@ async function verifyDigiLayout(url, preload) {
       assert.ok(!desktop.choices || noOverlap(desktop.choices,desktop.history),
         "Expanded suggestions must not cover the story log");
     }
+
+    // Movement must work in the focused street and must NOT steal keyboard
+    // controls from the terminal. Read the actual canvas instead of mock state.
+    const firstX=await until(wc, spriteX, "drawn player sprite");
+    await wc.executeJavaScript(`document.querySelector(".digi-street-frame").focus();
+      window.dispatchEvent(new KeyboardEvent("keydown",{key:"d",bubbles:true}));`);
+    const walkedX=await until(wc, `${spriteX} > ${firstX+5} && ${spriteX}`, "actual keyboard movement");
+    await wc.executeJavaScript(`window.dispatchEvent(new KeyboardEvent("keyup",{key:"d",bubbles:true}));
+      document.querySelector(".digi-view-toggle").focus();
+      window.dispatchEvent(new KeyboardEvent("keydown",{key:"d",bubbles:true}));`);
+    await pause(240);
+    const afterToolbarKey=await wc.executeJavaScript(spriteX);
+    assert.ok(afterToolbarKey!==null && Math.abs(afterToolbarKey-walkedX)<2,
+      "Keyboard keys outside the focused street must not move the player");
+    await wc.executeJavaScript('window.dispatchEvent(new KeyboardEvent("keyup",{key:"d",bubbles:true}))');
 
     // The narrower layout is stacked rather than compressing input beneath text.
     win.setSize(850, 740);
