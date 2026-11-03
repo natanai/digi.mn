@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Cleaner studies a glowing Sapotama in a sunset-lit apartment">
+<defs>
+<linearGradient id="wall" x2="0" y2="1"><stop stop-color="#ad9a9b"/><stop offset="1" stop-color="#746876"/></linearGradient>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#9aa4ce"/><stop offset=".72" stop-color="#f6c7a2"/><stop offset="1" stop-color="#e5b4a0"/></linearGradient>
+<radialGradient id="orb"><stop stop-color="#fffefa"/><stop offset=".55" stop-color="#dfd2ff"/><stop offset="1" stop-color="#ab85e4"/></radialGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="15"/></filter>
+<pattern id="grain" width="13" height="13" patternUnits="userSpaceOnUse"><circle cx="2" cy="6" r=".7" fill="#fff" opacity=".16"/><circle cx="9" cy="3" r=".7" fill="#2b2235" opacity=".13"/></pattern>
+</defs>
+<path fill="url(#wall)" d="M0 0h960v540H0z"/>
+<path fill="#4a4356" d="M0 394h960v146H0z"/><path fill="#745b5d" d="M0 445h960v95H0z"/>
+<path fill="#554959" stroke="#302c3e" stroke-width="12" d="M28 23h345v309H28z"/><path fill="url(#sky)" d="M35 30h331v295H35z"/>
+<path fill="#8b8799" d="M35 264h90v61H35zm90-35h96v96h-96zm98 51h145v45H223z"/><path fill="#616274" d="M56 233h34v91H56zm119-66h31v157h-31zm101 47h40v110h-40z"/>
+<path stroke="#645d6b" stroke-width="9" d="M202 30v295M28 210h345"/><path fill="#eee0cf" opacity=".6" d="M37 25h14v307H37z"/>
+<path fill="#6e6271" stroke="#403747" stroke-width="7" d="M405 12h182v355H405z"/><path fill="#4b4557" d="M418 44h154v7H418zm0 92h154v7H418zm0 96h154v7H418z"/>
+<path fill="#e0af8c" d="M429 63h29v70h-29z"/><path fill="#92a0a4" d="M470 56h24v78h-24z"/><path fill="#c3a5a3" d="M506 72h15v61h-15z"/>
+<path fill="#76708d" d="M419 148h34v80h-34z"/><path fill="#a7b6a7" d="M470 162h18v66h-18z"/><path fill="#b0a3c0" d="M508 145h35v83h-35z"/>
+<path fill="#453c4b" stroke="#2e2b3c" stroke-width="6" d="M765 100h169v218H765z"/><path fill="#a6a9b3" d="M780 117h138v186H780z"/><path fill="#f3d29e" d="M792 130h65v76h-65z"/><path fill="#cbaaa8" d="M866 154h40v68h-40z"/><path fill="#7b6d86" d="M790 234h114v54H790z"/>
+<path fill="#6f4c50" d="M0 472l292-59 290 27 221 100H0z"/><path fill="#bb8066" opacity=".7" d="M24 488l282-49 188 21-291 57z"/>
+<!-- floor desk -->
+<path fill="#6c4c49" stroke="#392e38" stroke-width="7" d="M0 412h345v33H0z"/><path fill="#574047" d="M35 447h23v93H35zm246 0h24v93h-24z"/>
+<path fill="#40445b" stroke="#242b3a" stroke-width="7" d="M51 292l214-4 37 122-238-12z"/><path fill="#8691ab" d="M65 304h190l26 89-199-4z"/>
+<path fill="#afb8bd" d="M83 326h155v8H83zm0 17h133v7H83zm0 17h143v6H83z"/>
+<path fill="#d7c4ab" stroke="#423e47" stroke-width="5" d="M307 361h47v58h-47z"/><path fill="none" stroke="#d7c4ab" stroke-width="10" d="M346 372q38-8 15 29"/>
+<!-- person seated -->
+<path fill="#333144" stroke="#201f31" stroke-width="9" d="M430 471q-11-91 83-114l107-7q118-5 156 73l-10 93H489z"/>
+<path fill="#d5aaa0" stroke="#282534" stroke-width="6" d="M535 201q51-49 107 0l-14 90-60 28-58-54z"/>
+<!-- hair -->
+<path fill="#af7656" stroke="#443444" stroke-width="9" d="M518 204q-48-75 27-111 54-31 108 3 66 28 40 86-35-23-62-4-13 29-43 28-5 58-60 63-46 8-60-27 61 5 50-38z"/>
+<path fill="#d9a26e" stroke="#583e48" stroke-width="7" d="M536 185q-76 40-49 104 48-21 57-71 64 22 93-50 23-56-16-80-84-18-100 47 71-36 110-12-68-3-95 62z"/>
+<path fill="#766276" d="M631 150q39 28 26 79-12 31-45 35l13-61z"/>
+<path stroke="#332c3c" stroke-width="4" d="M592 227q19-8 32 0"/><path fill="#2d2939" d="M613 231h5v4h-5z"/>
+<path fill="#cf9d86" stroke="#3a2c36" stroke-width="6" d="M546 294l-51 15-28 103 78 29 89-31 3-97-37-22z"/>
+<path fill="#272737" d="M538 307q50 24 77-1l-10 72-64 7z"/>
+<path fill="#e9dfe5" fill-opacity=".54" stroke="#d9d5dc" stroke-width="9" d="M497 296q-38-23-66 27l9 112 84 24 91-6 29-125-23-29-53 26z"/>
+<path fill="#cb9f8e" stroke="#332b39" stroke-width="6" d="M466 343q-49 3-86 4-21 1-17-22 6-16 35-17l67-20z"/>
+<ellipse cx="369" cy="302" rx="53" ry="62" fill="#ad83e3" opacity=".35" filter="url(#glow)"/><ellipse cx="372" cy="297" rx="38" ry="50" fill="url(#orb)" stroke="#bea5f7" stroke-width="5"/>
+<path fill="#fff" opacity=".75" d="M350 268q18-19 25-7 3 9-15 19z"/><path fill="#d2a4fa" d="M296 288h14v7h-14zm14-25h21v9h-21zm-1 48h8v7h-8z"/>
+<!-- note / mission -->
+<path fill="#f2dfbd" stroke="#5a4850" stroke-width="5" d="M641 309l94-40 48 143-94 37z"/><path fill="#8d8286" d="M663 321l62-28 18 55-62 27z"/><path stroke="#8b7271" stroke-width="6" d="M688 393l54-20m-50 35 54-22m-51 38 39-14"/>
+<!-- blue/red-haired shell creature conceptual silhouette -->
+<path fill="#ae2d55" stroke="#472b50" stroke-width="8" d="M762 333q61-125 143-33 35 66 7 106 40 24 17 86-32-9-52-31 8 56-44 69-36-28-27-75-64-44-44-122z"/>
+<path fill="#db476b" d="M803 305q85-66 110 37-30-29-60-23 69 52 37 107-11-60-65-59z"/>
+<path fill="#3f4e8a" stroke="#292a51" stroke-width="8" d="M777 373q14-66 76-48 48 14 44 71-38 17-54 52-46-6-72-41z"/>
+<path fill="#425a9a" stroke="#242b56" stroke-width="7" d="M789 349l-6-57 41 31 25-37 14 48"/>
+<path fill="#ded7e3" d="M808 365q25-13 35 2-10 19-30 13z"/><circle cx="820" cy="371" r="7" fill="#20243e"/>
+<path fill="none" stroke="#2a2a4a" stroke-width="5" d="M845 408q20-7 27 1"/>
+<path fill="url(#grain)" d="M0 0h960v540H0z"/>
+</svg>
