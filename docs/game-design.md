@@ -66,6 +66,12 @@ Do **not** create a second parallel dialogue system, separate combat narrative e
 
 Pre-programmed's current Windows packaging, generic terminal-focused player shell, and historical audits should be evaluated before copying wholesale; do not treat unrelated infrastructure as a mandatory product requirement.
 
+## Desktop interface invariant
+
+The game preserves the monochrome terminal visual language of pre-programmed. Spatial play is presented alongside, not instead of, a full-height left story/history column and a right-side command panel. The game viewport is above the right terminal, and player workspaces such as Inventory inhabit that viewport rather than replacing the entire desktop. Clicking a suggested command executes it immediately (the upstream Composer has a digi.mn opt-in flag). A demo-only cutaway preview control is informational and does not alter narrative flags.
+
+Player/companion appearance is provisionally stabilized on a consistent sprite frame with a slight moving bob. Redrawing a truly coherent set of animation frames is future art work, separate from motion and gameplay fixes. The companion must reach its follow target and remain stationary when the Cleaner stands still.
+
 ## Provisional in-engine character sprites
 
 The first street renderer now displays art assets instead of its original block-character placeholder: an original Cleaner with asymmetrical hair and black clothes, plus a small blue armadillo-themed companion whose long crimson mane suggests a protective cloak or shell. The imported four-frame atlases are provisional concept sprites, not a final canonical model sheet. **No egg appears in the protagonist sprite**; the Sapotama belongs to the separately authored partner origin sequence.
