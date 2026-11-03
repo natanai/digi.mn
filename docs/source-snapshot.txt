@@ -1,4 +1,4 @@
 source: natanai/pre-programmed
 source_commit: fafdf684b20ef8c920ebc9f1db1475da1d0732d8
 imported_for: digi.mn independent adaptation
-last_integrated_commit: 98fb32a0d507864a56ac86e48ba5e8b9bea0861d
+last_integrated_commit: 15b17142092be22b8cf0e37dfe699d33f4f29171
